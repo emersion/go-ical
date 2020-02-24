@@ -11,6 +11,12 @@ import (
 	"time"
 )
 
+// MIME type and file extension for iCal, defined in RFC 5545 section 8.1.
+const (
+	MIMEType  = "text/calendar"
+	Extension = "ics"
+)
+
 type Params map[string][]string
 
 func (params Params) Get(name string) string {
