@@ -29,13 +29,13 @@ END:VCALENDAR
 
 var exampleCalendar = &Calendar{&Component{
 	Name: "VCALENDAR",
-	Properties: Properties{
-		"PRODID": []Property{{
+	Props: Props{
+		"PRODID": []Prop{{
 			Name:   "PRODID",
 			Params: Params{},
 			Value:  "-//xyz Corp//NONSGML PDA Calendar Version 1.0//EN",
 		}},
-		"VERSION": []Property{{
+		"VERSION": []Prop{{
 			Name:   "VERSION",
 			Params: Params{},
 			Value:  "2.0",
@@ -44,50 +44,50 @@ var exampleCalendar = &Calendar{&Component{
 	Children: []*Component{
 		{
 			Name: "VEVENT",
-			Properties: Properties{
-				"DTSTAMP": []Property{{
+			Props: Props{
+				"DTSTAMP": []Prop{{
 					Name:   "DTSTAMP",
 					Params: Params{},
 					Value:  "19960704T120000Z",
 				}},
-				"UID": []Property{{
+				"UID": []Prop{{
 					Name:   "UID",
 					Params: Params{},
 					Value:  "uid1@example.com",
 				}},
-				"ORGANIZER": []Property{{
+				"ORGANIZER": []Prop{{
 					Name:   "ORGANIZER",
 					Params: Params{},
 					Value:  "mailto:jsmith@example.com",
 				}},
-				"DTSTART": []Property{{
+				"DTSTART": []Prop{{
 					Name:   "DTSTART",
 					Params: Params{},
 					Value:  "19960918T143000Z",
 				}},
-				"DTEND": []Property{{
+				"DTEND": []Prop{{
 					Name:   "DTEND",
 					Params: Params{},
 					Value:  "19960920T220000Z",
 				}},
-				"STATUS": []Property{{
+				"STATUS": []Prop{{
 					Name:   "STATUS",
 					Params: Params{},
 					Value:  "CONFIRMED",
 				}},
-				"CATEGORIES": []Property{{
+				"CATEGORIES": []Prop{{
 					Name:   "CATEGORIES",
 					Params: Params{},
 					Value:  "CONFERENCE",
 				}},
-				"SUMMARY": []Property{{
+				"SUMMARY": []Prop{{
 					Name: "SUMMARY",
 					Params: Params{
 						"FOO": []string{"bar", "b:az"},
 					},
 					Value: "Networld+Interop Conference",
 				}},
-				"DESCRIPTION": []Property{{
+				"DESCRIPTION": []Prop{{
 					Name: "DESCRIPTION",
 					Params: Params{
 						"ALTREP": []string{"cid:part1.0001@example.org"},
@@ -107,24 +107,24 @@ func TestCalendar(t *testing.T) {
 	event := events[0]
 
 	wantSummary := "Networld+Interop Conference"
-	if summary, err := event.Properties.Text(PropSummary); err != nil {
-		t.Errorf("Event.Properties.Text(PropSummary) = %v", err)
+	if summary, err := event.Props.Text(PropSummary); err != nil {
+		t.Errorf("Event.Props.Text(PropSummary) = %v", err)
 	} else if summary != wantSummary {
-		t.Errorf("Event.Properties.Text(PropSummary) = %v, want %v", summary, wantSummary)
+		t.Errorf("Event.Props.Text(PropSummary) = %v, want %v", summary, wantSummary)
 	}
 
 	wantDesc := "Networld+Interop Conference and Exhibit\nAtlanta World Congress Center\n Atlanta, Georgia"
-	if desc, err := event.Properties.Text(PropDescription); err != nil {
-		t.Errorf("Event.Properties.Text(PropDescription) = %v", err)
+	if desc, err := event.Props.Text(PropDescription); err != nil {
+		t.Errorf("Event.Props.Text(PropDescription) = %v", err)
 	} else if desc != wantDesc {
-		t.Errorf("Event.Properties.Text(PropDescription) = %v, want %v", desc, wantDesc)
+		t.Errorf("Event.Props.Text(PropDescription) = %v, want %v", desc, wantDesc)
 	}
 
 	wantDTStamp := time.Date(1996, 07, 04, 12, 0, 0, 0, time.UTC)
-	if dtStamp, err := event.Properties.DateTime(PropDateTimeStamp, nil); err != nil {
-		t.Errorf("Event.Properties.DateTime(PropDateTimeStamp) = %v", err)
+	if dtStamp, err := event.Props.DateTime(PropDateTimeStamp, nil); err != nil {
+		t.Errorf("Event.Props.DateTime(PropDateTimeStamp) = %v", err)
 	} else if dtStamp != wantDTStamp {
-		t.Errorf("Event.Properties.DateTime(PropDateTimeStamp) = %v, want %v", dtStamp, wantDTStamp)
+		t.Errorf("Event.Props.DateTime(PropDateTimeStamp) = %v, want %v", dtStamp, wantDTStamp)
 	}
 
 	wantDTStart := time.Date(1996, 9, 18, 14, 30, 0, 0, time.UTC)

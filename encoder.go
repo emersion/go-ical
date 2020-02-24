@@ -47,7 +47,7 @@ func checkComponent(comp *Component) error {
 		}
 
 		// TODO: DTSTART is required if VCALENDAR is missing the METHOD prop
-		if len(comp.Properties[PropDateTimeEnd]) > 0 && len(comp.Properties[PropDuration]) > 0 {
+		if len(comp.Props[PropDateTimeEnd]) > 0 && len(comp.Props[PropDuration]) > 0 {
 			return fmt.Errorf("ical: failed to encode VEVENT: only one of DTEND and DURATION can be specified")
 		}
 	case CompToDo:
@@ -79,10 +79,10 @@ func checkComponent(comp *Component) error {
 			PropDuration,
 		}
 
-		if len(comp.Properties[PropDue]) > 0 && len(comp.Properties[PropDuration]) > 0 {
+		if len(comp.Props[PropDue]) > 0 && len(comp.Props[PropDuration]) > 0 {
 			return fmt.Errorf("ical: failed to encode VTODO: only one of DUE and DURATION can be specified")
 		}
-		if len(comp.Properties[PropDuration]) > 0 && len(comp.Properties[PropDateTimeStart]) == 0 {
+		if len(comp.Props[PropDuration]) > 0 && len(comp.Props[PropDateTimeStart]) == 0 {
 			return fmt.Errorf("ical: failed to encode VTODO: DTSTART is required when DURATION is specified")
 		}
 	case CompJournal:
@@ -142,12 +142,12 @@ func checkComponent(comp *Component) error {
 	}
 
 	for _, name := range exactlyOneProps {
-		if n := len(comp.Properties[name]); n != 1 {
+		if n := len(comp.Props[name]); n != 1 {
 			return fmt.Errorf("ical: failed to encode %q: want exactly one %q property, got %v", comp.Name, name, n)
 		}
 	}
 	for _, name := range atMostOneProps {
-		if n := len(comp.Properties[name]); n > 1 {
+		if n := len(comp.Props[name]); n > 1 {
 			return fmt.Errorf("ical: failed to encode %q: want at most one %q property, got %v", comp.Name, name, n)
 		}
 	}
@@ -163,7 +163,7 @@ func NewEncoder(w io.Writer) *Encoder {
 	return &Encoder{w}
 }
 
-func (enc *Encoder) encodeProperty(prop *Property) error {
+func (enc *Encoder) encodeProp(prop *Prop) error {
 	var buf bytes.Buffer
 	buf.WriteString(prop.Name)
 
@@ -209,20 +209,20 @@ func (enc *Encoder) encodeComponent(comp *Component) error {
 		return err
 	}
 
-	err := enc.encodeProperty(&Property{Name: "BEGIN", Value: comp.Name})
+	err := enc.encodeProp(&Prop{Name: "BEGIN", Value: comp.Name})
 	if err != nil {
 		return err
 	}
 
-	propNames := make([]string, 0, len(comp.Properties))
-	for name := range comp.Properties {
+	propNames := make([]string, 0, len(comp.Props))
+	for name := range comp.Props {
 		propNames = append(propNames, name)
 	}
 	sort.Strings(propNames)
 
 	for _, name := range propNames {
-		for _, prop := range comp.Properties[name] {
-			if err := enc.encodeProperty(&prop); err != nil {
+		for _, prop := range comp.Props[name] {
+			if err := enc.encodeProp(&prop); err != nil {
 				return err
 			}
 		}
@@ -234,7 +234,7 @@ func (enc *Encoder) encodeComponent(comp *Component) error {
 		}
 	}
 
-	return enc.encodeProperty(&Property{Name: "END", Value: comp.Name})
+	return enc.encodeProp(&Prop{Name: "END", Value: comp.Name})
 }
 
 func (enc *Encoder) EncodeCalendar(cal *Calendar) error {

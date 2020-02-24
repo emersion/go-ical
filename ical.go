@@ -51,20 +51,20 @@ func (params Params) SetValueType(t ValueType) {
 	}
 }
 
-type Property struct {
+type Prop struct {
 	Name   string
 	Params Params
 	Value  string
 }
 
-func NewProperty(name string) *Property {
-	return &Property{
+func NewProp(name string) *Prop {
+	return &Prop{
 		Name:   strings.ToUpper(name),
 		Params: make(Params),
 	}
 }
 
-func (prop *Property) expectValueType(want ValueType) error {
+func (prop *Prop) expectValueType(want ValueType) error {
 	t := prop.Params.ValueType()
 	if t != ValueDefault && t != want {
 		return fmt.Errorf("ical: expected type %q, got %q", want, t)
@@ -72,19 +72,19 @@ func (prop *Property) expectValueType(want ValueType) error {
 	return nil
 }
 
-func (prop *Property) Binary() ([]byte, error) {
+func (prop *Prop) Binary() ([]byte, error) {
 	if err := prop.expectValueType(ValueBinary); err != nil {
 		return nil, err
 	}
 	return base64.StdEncoding.DecodeString(prop.Value)
 }
 
-func (prop *Property) SetBinary(b []byte) {
+func (prop *Prop) SetBinary(b []byte) {
 	prop.Params.SetValueType(ValueBinary)
 	prop.Value = base64.StdEncoding.EncodeToString(b)
 }
 
-func (prop *Property) Bool() (bool, error) {
+func (prop *Prop) Bool() (bool, error) {
 	if err := prop.expectValueType(ValueBool); err != nil {
 		return false, err
 	}
@@ -98,7 +98,7 @@ func (prop *Property) Bool() (bool, error) {
 	}
 }
 
-func (prop *Property) DateTime(loc *time.Location) (time.Time, error) {
+func (prop *Prop) DateTime(loc *time.Location) (time.Time, error) {
 	if loc == nil {
 		loc = time.UTC
 	}
@@ -116,7 +116,7 @@ func (prop *Property) DateTime(loc *time.Location) (time.Time, error) {
 	}
 }
 
-func (prop *Property) SetDateTime(t time.Time) {
+func (prop *Prop) SetDateTime(t time.Time) {
 	prop.Params.SetValueType(ValueDateTime)
 	prop.Value = t.Format("20060102T150405Z")
 }
@@ -202,7 +202,7 @@ func (p *durationParser) parseDuration() (time.Duration, error) {
 	return dur, nil
 }
 
-func (prop *Property) Duration() (time.Duration, error) {
+func (prop *Prop) Duration() (time.Duration, error) {
 	if err := prop.expectValueType(ValueDuration); err != nil {
 		return 0, err
 	}
@@ -210,7 +210,7 @@ func (prop *Property) Duration() (time.Duration, error) {
 	return p.parseDuration()
 }
 
-func (prop *Property) SetDuration(dur time.Duration) {
+func (prop *Prop) SetDuration(dur time.Duration) {
 	prop.Params.SetValueType(ValueDuration)
 
 	sec := dur.Milliseconds() / 1000
@@ -230,21 +230,21 @@ func (prop *Property) SetDuration(dur time.Duration) {
 	prop.Value = s
 }
 
-func (prop *Property) Float() (float64, error) {
+func (prop *Prop) Float() (float64, error) {
 	if err := prop.expectValueType(ValueFloat); err != nil {
 		return 0, err
 	}
 	return strconv.ParseFloat(prop.Value, 64)
 }
 
-func (prop *Property) Int() (int, error) {
+func (prop *Prop) Int() (int, error) {
 	if err := prop.expectValueType(ValueInt); err != nil {
 		return 0, err
 	}
 	return strconv.Atoi(prop.Value)
 }
 
-func (prop *Property) TextList() ([]string, error) {
+func (prop *Prop) TextList() ([]string, error) {
 	if err := prop.expectValueType(ValueText); err != nil {
 		return nil, err
 	}
@@ -278,7 +278,7 @@ func (prop *Property) TextList() ([]string, error) {
 	return l, nil
 }
 
-func (prop *Property) SetTextList(l []string) {
+func (prop *Prop) SetTextList(l []string) {
 	prop.Params.SetValueType(ValueText)
 
 	var sb strings.Builder
@@ -303,7 +303,7 @@ func (prop *Property) SetTextList(l []string) {
 	prop.Value = sb.String()
 }
 
-func (prop *Property) Text() (string, error) {
+func (prop *Prop) Text() (string, error) {
 	l, err := prop.TextList()
 	if err != nil {
 		return "", err
@@ -314,69 +314,69 @@ func (prop *Property) Text() (string, error) {
 	return l[0], nil
 }
 
-func (prop *Property) SetText(text string) {
+func (prop *Prop) SetText(text string) {
 	prop.SetTextList([]string{text})
 }
 
 // TODO: Period, RecurrenceRule, Time, URI, UTCOffset
 
-type Properties map[string][]Property
+type Props map[string][]Prop
 
-func (props Properties) Get(name string) *Property {
+func (props Props) Get(name string) *Prop {
 	if l := props[strings.ToUpper(name)]; len(l) > 0 {
 		return &l[0]
 	}
 	return nil
 }
 
-func (props Properties) Set(prop *Property) {
-	props[prop.Name] = []Property{*prop}
+func (props Props) Set(prop *Prop) {
+	props[prop.Name] = []Prop{*prop}
 }
 
-func (props Properties) Add(prop *Property) {
+func (props Props) Add(prop *Prop) {
 	props[prop.Name] = append(props[prop.Name], *prop)
 }
 
-func (props Properties) Del(name string) {
+func (props Props) Del(name string) {
 	delete(props, name)
 }
 
-func (props Properties) Text(name string) (string, error) {
+func (props Props) Text(name string) (string, error) {
 	if prop := props.Get(name); prop != nil {
 		return prop.Text()
 	}
 	return "", nil
 }
 
-func (props Properties) SetText(name, text string) {
-	prop := NewProperty(name)
+func (props Props) SetText(name, text string) {
+	prop := NewProp(name)
 	prop.SetText(text)
 	props.Set(prop)
 }
 
-func (props Properties) DateTime(name string, loc *time.Location) (time.Time, error) {
+func (props Props) DateTime(name string, loc *time.Location) (time.Time, error) {
 	if prop := props.Get(name); prop != nil {
 		return prop.DateTime(loc)
 	}
 	return time.Time{}, nil
 }
 
-func (props Properties) SetDateTime(name string, t time.Time) {
-	prop := NewProperty(name)
+func (props Props) SetDateTime(name string, t time.Time) {
+	prop := NewProp(name)
 	prop.SetDateTime(t)
 	props.Set(prop)
 }
 
 type Component struct {
-	Name       string
-	Properties Properties
-	Children   []*Component
+	Name     string
+	Props    Props
+	Children []*Component
 }
 
 func NewComponent(name string) *Component {
 	return &Component{
-		Name:       strings.ToUpper(name),
-		Properties: make(Properties),
+		Name:  strings.ToUpper(name),
+		Props: make(Props),
 	}
 }
 
@@ -539,15 +539,15 @@ func NewEvent() *Event {
 }
 
 func (e *Event) DateTimeStart(loc *time.Location) (time.Time, error) {
-	return e.Properties.DateTime(PropDateTimeStart, loc)
+	return e.Props.DateTime(PropDateTimeStart, loc)
 }
 
 func (e *Event) DateTimeEnd(loc *time.Location) (time.Time, error) {
-	if prop := e.Properties.Get(PropDateTimeEnd); prop != nil {
+	if prop := e.Props.Get(PropDateTimeEnd); prop != nil {
 		return prop.DateTime(loc)
 	}
 
-	startProp := e.Properties.Get(PropDateTimeStart)
+	startProp := e.Props.Get(PropDateTimeStart)
 	if startProp == nil {
 		return time.Time{}, nil
 	}
@@ -558,7 +558,7 @@ func (e *Event) DateTimeEnd(loc *time.Location) (time.Time, error) {
 	}
 
 	var dur time.Duration
-	if durProp := e.Properties.Get(PropDuration); durProp != nil {
+	if durProp := e.Props.Get(PropDuration); durProp != nil {
 		dur, err = durProp.Duration()
 		if err != nil {
 			return time.Time{}, err
@@ -571,7 +571,7 @@ func (e *Event) DateTimeEnd(loc *time.Location) (time.Time, error) {
 }
 
 func (e *Event) Status() (EventStatus, error) {
-	s, err := e.Properties.Text(PropStatus)
+	s, err := e.Props.Text(PropStatus)
 	if err != nil {
 		return "", err
 	}
@@ -586,8 +586,8 @@ func (e *Event) Status() (EventStatus, error) {
 
 func (e *Event) SetStatus(status EventStatus) {
 	if status == "" {
-		e.Properties.Del(PropStatus)
+		e.Props.Del(PropStatus)
 	} else {
-		e.Properties.SetText(PropStatus, string(status))
+		e.Props.SetText(PropStatus, string(status))
 	}
 }

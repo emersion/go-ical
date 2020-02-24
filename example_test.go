@@ -23,7 +23,7 @@ func ExampleDecoder() {
 		}
 
 		for _, event := range cal.Events() {
-			summary, err := event.Properties.Text(ical.PropSummary)
+			summary, err := event.Props.Text(ical.PropSummary)
 			if err != nil {
 				log.Fatal(err)
 			}
@@ -34,14 +34,14 @@ func ExampleDecoder() {
 
 func ExampleEncoder() {
 	event := ical.NewEvent()
-	event.Properties.SetText(ical.PropUID, "uid@example.org")
-	event.Properties.SetDateTime(ical.PropDateTimeStamp, time.Now())
-	event.Properties.SetText(ical.PropSummary, "My awesome event")
-	event.Properties.SetDateTime(ical.PropDateTimeStart, time.Now().Add(24*time.Hour))
+	event.Props.SetText(ical.PropUID, "uid@example.org")
+	event.Props.SetDateTime(ical.PropDateTimeStamp, time.Now())
+	event.Props.SetText(ical.PropSummary, "My awesome event")
+	event.Props.SetDateTime(ical.PropDateTimeStart, time.Now().Add(24*time.Hour))
 
 	cal := ical.NewCalendar()
-	cal.Properties.SetText(ical.PropVersion, "2.0")
-	cal.Properties.SetText(ical.PropProductID, "-//xyz Corp//NONSGML PDA Calendar Version 1.0//EN")
+	cal.Props.SetText(ical.PropVersion, "2.0")
+	cal.Props.SetText(ical.PropProductID, "-//xyz Corp//NONSGML PDA Calendar Version 1.0//EN")
 	cal.Children = append(cal.Children, event.Component)
 
 	var buf bytes.Buffer

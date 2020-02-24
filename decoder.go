@@ -103,7 +103,7 @@ Loop:
 	return name, values, nil
 }
 
-func (ld *lineDecoder) decodeContentLine() (*Property, error) {
+func (ld *lineDecoder) decodeContentLine() (*Prop, error) {
 	name, err := ld.decodeName()
 	if err != nil {
 		return nil, err
@@ -122,7 +122,7 @@ func (ld *lineDecoder) decodeContentLine() (*Property, error) {
 		return nil, fmt.Errorf("ical: malformed property: expected colon")
 	}
 
-	return &Property{
+	return &Prop{
 		Name:   name,
 		Params: params,
 		Value:  ld.s,
@@ -178,7 +178,7 @@ func (dec *Decoder) readContinuedLine() (string, error) {
 	return sb.String(), nil
 }
 
-func (dec *Decoder) decodeContentLine() (*Property, error) {
+func (dec *Decoder) decodeContentLine() (*Prop, error) {
 	for {
 		l, err := dec.readContinuedLine()
 		if err != nil {
@@ -194,8 +194,8 @@ func (dec *Decoder) decodeContentLine() (*Property, error) {
 }
 
 func (dec *Decoder) decodeComponentBody(name string) (*Component, error) {
-	var prop *Property
-	props := make(Properties)
+	var prop *Prop
+	props := make(Props)
 PropLoop:
 	for {
 		var err error
@@ -243,9 +243,9 @@ ChildrenLoop:
 	}
 
 	return &Component{
-		Name:       name,
-		Properties: props,
-		Children:   children,
+		Name:     name,
+		Props:    props,
+		Children: children,
 	}, nil
 }
 
