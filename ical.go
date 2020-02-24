@@ -244,52 +244,78 @@ func (prop *Property) Int() (int, error) {
 	return strconv.Atoi(prop.Value)
 }
 
-func (prop *Property) Text() (string, error) {
+func (prop *Property) TextList() ([]string, error) {
 	if err := prop.expectValueType(ValueText); err != nil {
-		return "", err
+		return nil, err
 	}
 
+	var l []string
 	var sb strings.Builder
-	sb.Grow(len(prop.Value))
 	for i := 0; i < len(prop.Value); i++ {
-		if c := prop.Value[i]; c == '\\' {
+		switch c := prop.Value[i]; c {
+		case '\\':
 			i++
 			if i >= len(prop.Value) {
-				return "", fmt.Errorf("ical: malformed text: antislash at end of text")
+				return nil, fmt.Errorf("ical: malformed text: antislash at end of text")
 			}
 			switch c := prop.Value[i]; c {
 			case '\\', ';', ',':
 				sb.WriteByte(c)
-			case 'N', 'n':
+			case 'n', 'N':
 				sb.WriteByte('\n')
 			default:
-				return "", fmt.Errorf("ical: malformed text: invalid escape sequence '\\%v'", c)
+				return nil, fmt.Errorf("ical: malformed text: invalid escape sequence '\\%v'", c)
 			}
-		} else {
+		case ',':
+			l = append(l, sb.String())
+			sb.Reset()
+		default:
 			sb.WriteByte(c)
 		}
 	}
+	l = append(l, sb.String())
 
-	return sb.String(), nil
+	return l, nil
 }
 
-func (prop *Property) SetText(text string) {
+func (prop *Property) SetTextList(l []string) {
 	prop.Params.SetValueType(ValueText)
 
 	var sb strings.Builder
-	sb.Grow(len(text))
-	for _, r := range text {
-		switch r {
-		case '\\', ';', ',':
-			sb.WriteByte('\\')
-			sb.WriteRune(r)
-		case '\n':
-			sb.WriteString("\\n")
-		default:
-			sb.WriteRune(r)
+	for i, text := range l {
+		if i > 0 {
+			sb.WriteByte(',')
+		}
+
+		sb.Grow(len(text))
+		for _, r := range text {
+			switch r {
+			case '\\', ';', ',':
+				sb.WriteByte('\\')
+				sb.WriteRune(r)
+			case '\n':
+				sb.WriteString("\\n")
+			default:
+				sb.WriteRune(r)
+			}
 		}
 	}
 	prop.Value = sb.String()
+}
+
+func (prop *Property) Text() (string, error) {
+	l, err := prop.TextList()
+	if err != nil {
+		return "", err
+	}
+	if len(l) == 0 {
+		return "", nil
+	}
+	return l[0], nil
+}
+
+func (prop *Property) SetText(text string) {
+	prop.SetTextList([]string{text})
 }
 
 // TODO: Period, RecurrenceRule, Time, URI, UTCOffset
