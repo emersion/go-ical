@@ -7,7 +7,7 @@ import (
 
 func TestEncoder(t *testing.T) {
 	var buf bytes.Buffer
-	if err := NewEncoder(&buf).EncodeCalendar(exampleCalendar); err != nil {
+	if err := NewEncoder(&buf).Encode(exampleCalendar); err != nil {
 		t.Fatalf("Encode() = %v", err)
 	}
 	s := buf.String()

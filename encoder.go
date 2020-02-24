@@ -237,6 +237,6 @@ func (enc *Encoder) encodeComponent(comp *Component) error {
 	return enc.encodeProp(&Prop{Name: "END", Value: comp.Name})
 }
 
-func (enc *Encoder) EncodeCalendar(cal *Calendar) error {
+func (enc *Encoder) Encode(cal *Calendar) error {
 	return enc.encodeComponent(cal.Component)
 }

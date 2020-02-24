@@ -261,7 +261,7 @@ func (dec *Decoder) decodeComponent() (*Component, error) {
 	return dec.decodeComponentBody(strings.ToUpper(prop.Value))
 }
 
-func (dec *Decoder) DecodeCalendar() (*Calendar, error) {
+func (dec *Decoder) Decode() (*Calendar, error) {
 	comp, err := dec.decodeComponent()
 	if err != nil {
 		return nil, err

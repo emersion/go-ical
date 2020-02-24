@@ -15,7 +15,7 @@ func ExampleDecoder() {
 
 	dec := ical.NewDecoder(r)
 	for {
-		cal, err := dec.DecodeCalendar()
+		cal, err := dec.Decode()
 		if err == io.EOF {
 			break
 		} else if err != nil {
@@ -45,7 +45,7 @@ func ExampleEncoder() {
 	cal.Children = append(cal.Children, event.Component)
 
 	var buf bytes.Buffer
-	if err := ical.NewEncoder(&buf); err != nil {
+	if err := ical.NewEncoder(&buf).Encode(cal); err != nil {
 		log.Fatal(err)
 	}
 
