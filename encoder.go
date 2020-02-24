@@ -8,6 +8,153 @@ import (
 	"strings"
 )
 
+func checkComponent(comp *Component) error {
+	var exactlyOneProps, atMostOneProps []string
+	switch comp.Name {
+	case CompCalendar:
+		if len(comp.Children) == 0 {
+			return fmt.Errorf("ical: failed to encode VCALENDAR: calendar is empty")
+		}
+
+		exactlyOneProps = []string{PropProductID, PropVersion}
+		atMostOneProps = []string{PropCalendarScale, PropMethod}
+	case CompEvent:
+		for _, child := range comp.Children {
+			if child.Name != CompAlarm {
+				return fmt.Errorf("ical: failed to encode VEVENT: nested %q components are forbidden, only VALARM is allowed", child.Name)
+			}
+		}
+
+		exactlyOneProps = []string{PropDateTimeStamp, PropUID}
+		atMostOneProps = []string{
+			PropDateTimeStart,
+			PropClass,
+			PropCreated,
+			PropDescription,
+			PropGeo,
+			PropLastModified,
+			PropLocation,
+			PropOrganizer,
+			PropPriority,
+			PropSequence,
+			PropStatus,
+			PropSummary,
+			PropTransparency,
+			PropURL,
+			PropRecurrenceID,
+			PropDateTimeEnd,
+			PropDuration,
+		}
+
+		// TODO: DTSTART is required if VCALENDAR is missing the METHOD prop
+		if len(comp.Properties[PropDateTimeEnd]) > 0 && len(comp.Properties[PropDuration]) > 0 {
+			return fmt.Errorf("ical: failed to encode VEVENT: only one of DTEND and DURATION can be specified")
+		}
+	case CompToDo:
+		for _, child := range comp.Children {
+			if child.Name != CompAlarm {
+				return fmt.Errorf("ical: failed to encode VTODO: nested %q components are forbidden, only VALARM is allowed", child.Name)
+			}
+		}
+
+		exactlyOneProps = []string{PropDateTimeStamp, PropUID}
+		atMostOneProps = []string{
+			PropClass,
+			PropCompleted,
+			PropCreated,
+			PropDescription,
+			PropDateTimeStart,
+			PropGeo,
+			PropLastModified,
+			PropLocation,
+			PropOrganizer,
+			PropPercentComplete,
+			PropPriority,
+			PropRecurrenceID,
+			PropSequence,
+			PropStatus,
+			PropSummary,
+			PropURL,
+			PropDue,
+			PropDuration,
+		}
+
+		if len(comp.Properties[PropDue]) > 0 && len(comp.Properties[PropDuration]) > 0 {
+			return fmt.Errorf("ical: failed to encode VTODO: only one of DUE and DURATION can be specified")
+		}
+		if len(comp.Properties[PropDuration]) > 0 && len(comp.Properties[PropDateTimeStart]) == 0 {
+			return fmt.Errorf("ical: failed to encode VTODO: DTSTART is required when DURATION is specified")
+		}
+	case CompJournal:
+		exactlyOneProps = []string{PropDateTimeStamp, PropUID}
+		atMostOneProps = []string{
+			PropClass,
+			PropCreated,
+			PropDateTimeStart,
+			PropLastModified,
+			PropOrganizer,
+			PropRecurrenceID,
+			PropSequence,
+			PropStatus,
+			PropSummary,
+			PropURL,
+		}
+
+		if len(comp.Children) > 0 {
+			return fmt.Errorf("ical: failed to encode VJOURNAL: nested components are forbidden")
+		}
+	case CompFreeBusy:
+		exactlyOneProps = []string{PropDateTimeStamp, PropUID}
+		atMostOneProps = []string{
+			PropContact,
+			PropDateTimeStart,
+			PropDateTimeEnd,
+			PropOrganizer,
+			PropURL,
+		}
+
+		if len(comp.Children) > 0 {
+			return fmt.Errorf("ical: failed to encode VFREEBUSY: nested components are forbidden")
+		}
+	case CompTimezone:
+		if len(comp.Children) == 0 {
+			return fmt.Errorf("ical: failed to encode VTIMEZONE: expected one nested STANDARD or DAYLIGHT component")
+		}
+		for _, child := range comp.Children {
+			if child.Name != CompTimezoneStandard && child.Name != CompTimezoneDaylight {
+				return fmt.Errorf("ical: failed to encode VTIMEZONE: nested %q components are forbidden, only STANDARD and DAYLIGHT are allowed", child.Name)
+			}
+		}
+
+		exactlyOneProps = []string{PropTimezoneID}
+		atMostOneProps = []string{
+			PropLastModified,
+			PropTimezoneURL,
+		}
+	case CompTimezoneStandard, CompTimezoneDaylight:
+		exactlyOneProps = []string{
+			PropDateTimeStart,
+			PropTimezoneOffsetTo,
+			PropTimezoneOffsetFrom,
+		}
+	case CompAlarm:
+		// TODO
+	}
+
+	for _, name := range exactlyOneProps {
+		if n := len(comp.Properties[name]); n != 1 {
+			return fmt.Errorf("ical: failed to encode %q: want exactly one %q property, got %v", comp.Name, name, n)
+		}
+	}
+	for _, name := range atMostOneProps {
+		if n := len(comp.Properties[name]); n > 1 {
+			return fmt.Errorf("ical: failed to encode %q: want at most one %q property, got %v", comp.Name, name, n)
+		}
+	}
+
+	return nil
+}
+
 type Encoder struct {
 	w io.Writer
 }
@@ -58,6 +205,10 @@ func (enc *Encoder) encodeProperty(prop *Property) error {
 }
 
 func (enc *Encoder) encodeComponent(comp *Component) error {
+	if err := checkComponent(comp); err != nil {
+		return err
+	}
+
 	err := enc.encodeProperty(&Property{Name: "BEGIN", Value: comp.Name})
 	if err != nil {
 		return err

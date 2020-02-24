@@ -22,11 +22,82 @@ type Component struct {
 const (
 	CompCalendar = "VCALENDAR"
 	CompEvent    = "VEVENT"
-	CompTODO     = "VTODO"
+	CompToDo     = "VTODO"
 	CompJournal  = "VJOURNAL"
 	CompFreeBusy = "VFREEBUSY"
 	CompTimezone = "VTIMEZONE"
 	CompAlarm    = "VALARM"
+)
+
+const (
+	CompTimezoneStandard = "STANDARD"
+	CompTimezoneDaylight = "DAYLIGHT"
+)
+
+const (
+	// Calendar properties
+	PropCalendarScale = "CALSCALE"
+	PropMethod        = "METHOD"
+	PropProductID     = "PRODID"
+	PropVersion       = "VERSION"
+
+	// Component properties
+	PropAttach          = "ATTACH"
+	PropCategories      = "CATEGORIES"
+	PropClass           = "CLASS"
+	PropComment         = "COMMENT"
+	PropDescription     = "DESCRIPTION"
+	PropGeo             = "GEO"
+	PropLocation        = "LOCATION"
+	PropPercentComplete = "PERCENT-COMPLETE"
+	PropPriority        = "PRIORITY"
+	PropResources       = "RESOURCES"
+	PropStatus          = "STATUS"
+	PropSummary         = "SUMMARY"
+
+	// Date and time component properties
+	PropCompleted     = "COMPLETED"
+	PropDateTimeEnd   = "DTEND"
+	PropDue           = "DUE"
+	PropDateTimeStart = "DTSTART"
+	PropDuration      = "DURATION"
+	PropFreeBusy      = "FREEBUSY"
+	PropTransparency  = "TRANSP"
+
+	// Timezone component properties
+	PropTimezoneID         = "TZID"
+	PropTimezoneName       = "TZNAME"
+	PropTimezoneOffsetFrom = "TZOFFSETFROM"
+	PropTimezoneOffsetTo   = "TZOFFSETTO"
+	PropTimezoneURL        = "TZURL"
+
+	// Relationship component properties
+	PropAttendee     = "ATTENDEE"
+	PropContact      = "CONTACT"
+	PropOrganizer    = "ORGANIZER"
+	PropRecurrenceID = "RECURRENCE-ID"
+	PropRelatedTo    = "RELATED-TO"
+	PropURL          = "URL"
+	PropUID          = "UID"
+
+	// Recurrence component properties
+	PropExceptionDates  = "EXDATE"
+	PropRecurrenceDates = "RDATE"
+	PropRecurrenceRule  = "RRULE"
+
+	// Alarm component properties
+	PropAction  = "ACTION"
+	PropRepeat  = "REPEAT"
+	PropTrigger = "TRIGGER"
+
+	// Change management component properties
+	PropCreated       = "CREATED"
+	PropDateTimeStamp = "DTSTAMP"
+	PropLastModified  = "LAST-MODIFIED"
+	PropSequence      = "SEQUENCE"
+
+	// Miscellaneous component properties
+	PropRequestStatus = "REQUEST-STATUS"
 )
 
 const (
