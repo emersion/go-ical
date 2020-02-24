@@ -229,7 +229,7 @@ func (enc *Encoder) encodeComponent(comp *Component) error {
 	}
 
 	for _, child := range comp.Children {
-		if err := enc.encodeComponent(&child); err != nil {
+		if err := enc.encodeComponent(child); err != nil {
 			return err
 		}
 	}
@@ -238,5 +238,5 @@ func (enc *Encoder) encodeComponent(comp *Component) error {
 }
 
 func (enc *Encoder) EncodeCalendar(cal *Calendar) error {
-	return enc.encodeComponent(&cal.Component)
+	return enc.encodeComponent(cal.Component)
 }

@@ -2,6 +2,8 @@ package ical
 
 import (
 	"strings"
+	"testing"
+	"time"
 )
 
 func toCRLF(s string) string {
@@ -25,7 +27,7 @@ END:VEVENT
 END:VCALENDAR
 `)
 
-var exampleCalendar = &Calendar{Component{
+var exampleCalendar = &Calendar{&Component{
 	Name: "VCALENDAR",
 	Properties: Properties{
 		"PRODID": []Property{{
@@ -39,8 +41,8 @@ var exampleCalendar = &Calendar{Component{
 			Value:  "2.0",
 		}},
 	},
-	Children: []Component{
-		Component{
+	Children: []*Component{
+		{
 			Name: "VEVENT",
 			Properties: Properties{
 				"DTSTAMP": []Property{{
@@ -96,3 +98,32 @@ var exampleCalendar = &Calendar{Component{
 		},
 	},
 }}
+
+func TestCalendar(t *testing.T) {
+	events := exampleCalendar.Events()
+	if len(events) != 1 {
+		t.Fatalf("len(Calendar.Events()) = %v, want 1", len(events))
+	}
+	event := events[0]
+
+	wantSummary := "Networld+Interop Conference"
+	if summary, err := event.Properties.Text(PropSummary); err != nil {
+		t.Errorf("Event.Properties.Text(PropSummary) = %v", err)
+	} else if summary != wantSummary {
+		t.Errorf("Event.Properties.Text(PropSummary) = %v, want %v", summary, wantSummary)
+	}
+
+	wantDesc := "Networld+Interop Conference and Exhibit\nAtlanta World Congress Center\n Atlanta, Georgia"
+	if desc, err := event.Properties.Text(PropDescription); err != nil {
+		t.Errorf("Event.Properties.Text(PropDescription) = %v", err)
+	} else if desc != wantDesc {
+		t.Errorf("Event.Properties.Text(PropDescription) = %v, want %v", desc, wantDesc)
+	}
+
+	wantDTStamp := time.Date(1996, 07, 04, 12, 0, 0, 0, time.UTC)
+	if dtStamp, err := event.Properties.DateTime(PropDateTimeStamp, nil); err != nil {
+		t.Errorf("Event.Properties.DateTime(PropDateTimeStamp) = %v", err)
+	} else if dtStamp != wantDTStamp {
+		t.Errorf("Event.Properties.DateTime(PropDateTimeStamp) = %v, want %v", dtStamp, wantDTStamp)
+	}
+}

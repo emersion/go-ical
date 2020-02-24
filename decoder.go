@@ -212,7 +212,7 @@ PropLoop:
 		}
 	}
 
-	var children []Component
+	var children []*Component
 ChildrenLoop:
 	for {
 		switch prop.Name {
@@ -221,7 +221,7 @@ ChildrenLoop:
 			if err != nil {
 				return nil, err
 			}
-			children = append(children, *child)
+			children = append(children, child)
 		case "END":
 			break ChildrenLoop
 		default:
@@ -267,5 +267,5 @@ func (dec *Decoder) DecodeCalendar() (*Calendar, error) {
 		return nil, err
 	}
 
-	return &Calendar{*comp}, nil
+	return &Calendar{comp}, nil
 }

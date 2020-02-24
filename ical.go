@@ -51,6 +51,13 @@ type Property struct {
 	Value  string
 }
 
+func NewProperty(name string) *Property {
+	return &Property{
+		Name:   strings.ToUpper(name),
+		Params: make(Params),
+	}
+}
+
 func (prop *Property) expectValueType(want ValueType) error {
 	t := prop.Params.ValueType()
 	if t != ValueDefault && t != want {
@@ -278,29 +285,62 @@ func (prop *Property) SetText(text string) {
 
 type Properties map[string][]Property
 
-func (m Properties) Get(name string) *Property {
-	if l := m[strings.ToUpper(name)]; len(l) > 0 {
+func (props Properties) Get(name string) *Property {
+	if l := props[strings.ToUpper(name)]; len(l) > 0 {
 		return &l[0]
 	}
 	return nil
 }
 
-func (m Properties) Set(prop *Property) {
-	m[prop.Name] = []Property{*prop}
+func (props Properties) Set(prop *Property) {
+	props[prop.Name] = []Property{*prop}
 }
 
-func (m Properties) Add(prop *Property) {
-	m[prop.Name] = append(m[prop.Name], *prop)
+func (props Properties) Add(prop *Property) {
+	props[prop.Name] = append(props[prop.Name], *prop)
 }
 
-func (m Properties) Del(name string) {
-	delete(m, name)
+func (props Properties) Del(name string) {
+	delete(props, name)
+}
+
+func (props Properties) Text(name string) (string, error) {
+	if prop := props.Get(name); prop != nil {
+		return prop.Text()
+	}
+	return "", nil
+}
+
+func (props Properties) SetText(name, text string) {
+	prop := NewProperty(name)
+	prop.SetText(text)
+	props.Set(prop)
+}
+
+func (props Properties) DateTime(name string, loc *time.Location) (time.Time, error) {
+	if prop := props.Get(name); prop != nil {
+		return prop.DateTime(loc)
+	}
+	return time.Time{}, nil
+}
+
+func (props Properties) SetDateTime(name string, t time.Time) {
+	prop := NewProperty(name)
+	prop.SetDateTime(t)
+	props.Set(prop)
 }
 
 type Component struct {
 	Name       string
 	Properties Properties
-	Children   []Component
+	Children   []*Component
+}
+
+func NewComponent(name string) *Component {
+	return &Component{
+		Name:       strings.ToUpper(name),
+		Properties: make(Properties),
+	}
 }
 
 const (
@@ -428,5 +468,27 @@ const (
 )
 
 type Calendar struct {
-	Component
+	*Component
+}
+
+func NewCalendar() *Calendar {
+	return &Calendar{NewComponent(CompCalendar)}
+}
+
+func (cal *Calendar) Events() []Event {
+	l := make([]Event, 0, len(cal.Children))
+	for _, child := range cal.Children {
+		if child.Name == CompEvent {
+			l = append(l, Event{child})
+		}
+	}
+	return l
+}
+
+type Event struct {
+	*Component
+}
+
+func NewEvent() *Event {
+	return &Event{NewComponent(CompEvent)}
 }
