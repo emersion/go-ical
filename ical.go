@@ -73,6 +73,11 @@ func (prop *Property) Binary() ([]byte, error) {
 	return base64.StdEncoding.DecodeString(prop.Value)
 }
 
+func (prop *Property) SetBinary(b []byte) {
+	prop.Params.SetValueType(ValueBinary)
+	prop.Value = base64.StdEncoding.EncodeToString(b)
+}
+
 func (prop *Property) Bool() (bool, error) {
 	if err := prop.expectValueType(ValueBool); err != nil {
 		return false, err
