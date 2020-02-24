@@ -35,11 +35,13 @@ func ExampleDecoder() {
 func ExampleEncoder() {
 	event := ical.NewEvent()
 	event.Properties.SetText(ical.PropUID, "uid@example.org")
-	event.Properties.SetText(ical.PropProductID, "-//xyz Corp//NONSGML PDA Calendar Version 1.0//EN")
+	event.Properties.SetDateTime(ical.PropDateTimeStamp, time.Now())
 	event.Properties.SetText(ical.PropSummary, "My awesome event")
-	event.Properties.SetDateTime(ical.PropDateTimeStart, time.Now())
+	event.Properties.SetDateTime(ical.PropDateTimeStart, time.Now().Add(24*time.Hour))
 
 	cal := ical.NewCalendar()
+	cal.Properties.SetText(ical.PropVersion, "2.0")
+	cal.Properties.SetText(ical.PropProductID, "-//xyz Corp//NONSGML PDA Calendar Version 1.0//EN")
 	cal.Children = append(cal.Children, event.Component)
 
 	var buf bytes.Buffer
