@@ -3,7 +3,31 @@
 // iCalendar is defined in RFC 5545.
 package ical
 
+import (
+	"strings"
+)
+
 type Params map[string][]string
+
+func (params Params) Get(name string) string {
+	if values := params[strings.ToUpper(name)]; len(values) > 0 {
+		return values[0]
+	}
+	return ""
+}
+
+func (params Params) Set(name, value string) {
+	params[strings.ToUpper(name)] = []string{value}
+}
+
+func (params Params) Add(name, value string) {
+	name = strings.ToUpper(name)
+	params[name] = append(params[name], value)
+}
+
+func (params Params) Del(name string) {
+	delete(params, strings.ToUpper(name))
+}
 
 type Property struct {
 	Name   string
@@ -12,6 +36,25 @@ type Property struct {
 }
 
 type Properties map[string][]Property
+
+func (m Properties) Get(name string) *Property {
+	if l := m[strings.ToUpper(name)]; len(l) > 0 {
+		return &l[0]
+	}
+	return nil
+}
+
+func (m Properties) Set(prop *Property) {
+	m[prop.Name] = []Property{*prop}
+}
+
+func (m Properties) Add(prop *Property) {
+	m[prop.Name] = append(m[prop.Name], *prop)
+}
+
+func (m Properties) Del(name string) {
+	delete(m, name)
+}
 
 type Component struct {
 	Name       string
