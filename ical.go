@@ -496,6 +496,14 @@ func (cal *Calendar) Events() []Event {
 	return l
 }
 
+type EventStatus string
+
+const (
+	EventTentative EventStatus = "TENTATIVE"
+	EventConfirmed EventStatus = "CONFIRMED"
+	EventCancelled EventStatus = "CANCELLED"
+)
+
 type Event struct {
 	*Component
 }
@@ -534,4 +542,26 @@ func (e *Event) DateTimeEnd(loc *time.Location) (time.Time, error) {
 	}
 
 	return start.Add(dur), nil
+}
+
+func (e *Event) Status() (EventStatus, error) {
+	s, err := e.Properties.Text(PropStatus)
+	if err != nil {
+		return "", err
+	}
+
+	switch status := EventStatus(strings.ToUpper(s)); status {
+	case "", EventTentative, EventConfirmed, EventCancelled:
+		return status, nil
+	default:
+		return "", fmt.Errorf("ical: invalid VEVENT STATUS: %q", status)
+	}
+}
+
+func (e *Event) SetStatus(status EventStatus) {
+	if status == "" {
+		e.Properties.Del(PropStatus)
+	} else {
+		e.Properties.SetText(PropStatus, string(status))
+	}
 }
