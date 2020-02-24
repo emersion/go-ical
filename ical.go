@@ -4,7 +4,11 @@
 package ical
 
 import (
+	"encoding/base64"
+	"fmt"
+	"strconv"
 	"strings"
+	"time"
 )
 
 type Params map[string][]string
@@ -29,11 +33,248 @@ func (params Params) Del(name string) {
 	delete(params, strings.ToUpper(name))
 }
 
+func (params Params) ValueType() ValueType {
+	return ValueType(params.Get(ParamValue))
+}
+
+func (params Params) SetValueType(t ValueType) {
+	if t == ValueDefault {
+		params.Del(ParamValue)
+	} else {
+		params.Set(ParamValue, string(t))
+	}
+}
+
 type Property struct {
 	Name   string
 	Params Params
 	Value  string
 }
+
+func (prop *Property) expectValueType(want ValueType) error {
+	t := prop.Params.ValueType()
+	if t != ValueDefault && t != want {
+		return fmt.Errorf("ical: expected type %q, got %q", want, t)
+	}
+	return nil
+}
+
+func (prop *Property) Binary() ([]byte, error) {
+	if err := prop.expectValueType(ValueBinary); err != nil {
+		return nil, err
+	}
+	return base64.StdEncoding.DecodeString(prop.Value)
+}
+
+func (prop *Property) Bool() (bool, error) {
+	if err := prop.expectValueType(ValueBool); err != nil {
+		return false, err
+	}
+	switch strings.ToUpper(prop.Value) {
+	case "TRUE":
+		return true, nil
+	case "FALSE":
+		return false, nil
+	default:
+		return false, fmt.Errorf("ical: invalid boolean: %q", prop.Value)
+	}
+}
+
+func (prop *Property) DateTime(loc *time.Location) (time.Time, error) {
+	if loc == nil {
+		loc = time.UTC
+	}
+	switch t := prop.Params.ValueType(); t {
+	case ValueDefault, ValueDateTime:
+		// TODO: use the TZID parameter, if any
+		if t, err := time.ParseInLocation("20060102T150405", prop.Value, loc); err == nil {
+			return t, nil
+		}
+		return time.ParseInLocation("20060102T150405Z", prop.Value, time.UTC)
+	case ValueDate:
+		return time.ParseInLocation("20060102", prop.Value, loc)
+	default:
+		return time.Time{}, fmt.Errorf("ical: expected DATE or DATE-TIME, got %q", t)
+	}
+}
+
+func (prop *Property) SetDateTime(t time.Time) {
+	prop.Params.SetValueType(ValueDateTime)
+	prop.Value = t.Format("20060102T150405Z")
+}
+
+type durationParser struct {
+	s string
+}
+
+func (p *durationParser) consume(c byte) bool {
+	if len(p.s) == 0 || p.s[0] != c {
+		return false
+	}
+	p.s = p.s[1:]
+	return true
+}
+
+func (p *durationParser) parseCount() (time.Duration, error) {
+	// Find the first non-digit
+	i := strings.IndexFunc(p.s, func(r rune) bool {
+		return r < '0' || r > '9'
+	})
+	if i == 0 {
+		return 0, fmt.Errorf("ical: invalid duration: expected a digit")
+	}
+	if i < 0 {
+		i = len(p.s)
+	}
+
+	n, err := strconv.ParseUint(p.s[:i], 10, 64)
+	if err != nil {
+		return 0, fmt.Errorf("ical: invalid duration: %v", err)
+	}
+	p.s = p.s[i:]
+	return time.Duration(n), nil
+}
+
+func (p *durationParser) parseDuration() (time.Duration, error) {
+	neg := p.consume('-')
+	if !neg {
+		_ = p.consume('+')
+	}
+
+	if !p.consume('P') {
+		return 0, fmt.Errorf("ical: invalid duration: expected 'P'")
+	}
+
+	var dur time.Duration
+	isTime := false
+	for len(p.s) > 0 {
+		if p.consume('T') {
+			isTime = true
+		}
+
+		n, err := p.parseCount()
+		if err != nil {
+			return 0, err
+		}
+
+		if !isTime {
+			if p.consume('D') {
+				dur += n * 24 * time.Hour
+			} else if p.consume('W') {
+				dur += n * 7 * 24 * time.Hour
+			} else {
+				return 0, fmt.Errorf("ical: invalid duration: expected 'D' or 'W'")
+			}
+		} else {
+			if p.consume('H') {
+				dur += n * time.Hour
+			} else if p.consume('M') {
+				dur += n * time.Minute
+			} else if p.consume('S') {
+				dur += n * time.Second
+			} else {
+				return 0, fmt.Errorf("ical: invalid duration: expected 'H', 'M' or 'S'")
+			}
+		}
+	}
+
+	if neg {
+		dur = -dur
+	}
+	return dur, nil
+}
+
+func (prop *Property) Duration() (time.Duration, error) {
+	if err := prop.expectValueType(ValueDuration); err != nil {
+		return 0, err
+	}
+	p := durationParser{strings.ToUpper(prop.Value)}
+	return p.parseDuration()
+}
+
+func (prop *Property) SetDuration(dur time.Duration) {
+	prop.Params.SetValueType(ValueDuration)
+
+	sec := dur.Milliseconds() / 1000
+	neg := sec < 0
+	if sec < 0 {
+		sec = -sec
+	}
+
+	var s string
+	if neg {
+		s += "-"
+	}
+	s += "PT"
+	s += strconv.FormatInt(sec, 10)
+	s += "S"
+
+	prop.Value = s
+}
+
+func (prop *Property) Float() (float64, error) {
+	if err := prop.expectValueType(ValueFloat); err != nil {
+		return 0, err
+	}
+	return strconv.ParseFloat(prop.Value, 64)
+}
+
+func (prop *Property) Int() (int, error) {
+	if err := prop.expectValueType(ValueInt); err != nil {
+		return 0, err
+	}
+	return strconv.Atoi(prop.Value)
+}
+
+func (prop *Property) Text() (string, error) {
+	if err := prop.expectValueType(ValueText); err != nil {
+		return "", err
+	}
+
+	var sb strings.Builder
+	sb.Grow(len(prop.Value))
+	for i := 0; i < len(prop.Value); i++ {
+		if c := prop.Value[i]; c == '\\' {
+			i++
+			if i >= len(prop.Value) {
+				return "", fmt.Errorf("ical: malformed text: antislash at end of text")
+			}
+			switch c := prop.Value[i]; c {
+			case '\\', ';', ',':
+				sb.WriteByte(c)
+			case 'N', 'n':
+				sb.WriteByte('\n')
+			default:
+				return "", fmt.Errorf("ical: malformed text: invalid escape sequence '\\%v'", c)
+			}
+		} else {
+			sb.WriteByte(c)
+		}
+	}
+
+	return sb.String(), nil
+}
+
+func (prop *Property) SetText(text string) {
+	prop.Params.SetValueType(ValueText)
+
+	var sb strings.Builder
+	sb.Grow(len(text))
+	for _, r := range text {
+		switch r {
+		case '\\', ';', ',':
+			sb.WriteByte('\\')
+			sb.WriteRune(r)
+		case '\n':
+			sb.WriteString("\\n")
+		default:
+			sb.WriteRune(r)
+		}
+	}
+	prop.Value = sb.String()
+}
+
+// TODO: Period, RecurrenceRule, Time, URI, UTCOffset
 
 type Properties map[string][]Property
 
@@ -169,14 +410,15 @@ const (
 type ValueType string
 
 const (
+	ValueDefault         ValueType = ""
 	ValueBinary          ValueType = "BINARY"
-	ValueBoolean         ValueType = "BOOLEAN"
+	ValueBool            ValueType = "BOOLEAN"
 	ValueCalendarAddress ValueType = "CAL-ADDRESS"
 	ValueDate            ValueType = "DATE"
 	ValueDateTime        ValueType = "DATE-TIME"
 	ValueDuration        ValueType = "DURATION"
 	ValueFloat           ValueType = "FLOAT"
-	ValueInteger         ValueType = "INTEGER"
+	ValueInt             ValueType = "INTEGER"
 	ValuePeriod          ValueType = "PERIOD"
 	ValueRecurrence      ValueType = "RECUR"
 	ValueText            ValueType = "TEXT"
