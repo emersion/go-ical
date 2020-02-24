@@ -492,3 +492,35 @@ type Event struct {
 func NewEvent() *Event {
 	return &Event{NewComponent(CompEvent)}
 }
+
+func (e *Event) DateTimeStart(loc *time.Location) (time.Time, error) {
+	return e.Properties.DateTime(PropDateTimeStart, loc)
+}
+
+func (e *Event) DateTimeEnd(loc *time.Location) (time.Time, error) {
+	if prop := e.Properties.Get(PropDateTimeEnd); prop != nil {
+		return prop.DateTime(loc)
+	}
+
+	startProp := e.Properties.Get(PropDateTimeStart)
+	if startProp == nil {
+		return time.Time{}, nil
+	}
+
+	start, err := startProp.DateTime(loc)
+	if err != nil {
+		return time.Time{}, err
+	}
+
+	var dur time.Duration
+	if durProp := e.Properties.Get(PropDuration); durProp != nil {
+		dur, err = durProp.Duration()
+		if err != nil {
+			return time.Time{}, err
+		}
+	} else if startProp.Params.ValueType() == ValueDate {
+		dur = 24 * time.Hour
+	}
+
+	return start.Add(dur), nil
+}

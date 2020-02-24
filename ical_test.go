@@ -126,4 +126,18 @@ func TestCalendar(t *testing.T) {
 	} else if dtStamp != wantDTStamp {
 		t.Errorf("Event.Properties.DateTime(PropDateTimeStamp) = %v, want %v", dtStamp, wantDTStamp)
 	}
+
+	wantDTStart := time.Date(1996, 9, 18, 14, 30, 0, 0, time.UTC)
+	if dtStart, err := event.DateTimeStart(nil); err != nil {
+		t.Errorf("Event.DateTimeStart() = %v", err)
+	} else if dtStart != wantDTStart {
+		t.Errorf("Event.DateTimeStart() = %v, want %v", dtStart, wantDTStart)
+	}
+
+	wantDTEnd := time.Date(1996, 9, 20, 22, 0, 0, 0, time.UTC)
+	if dtEnd, err := event.DateTimeEnd(nil); err != nil {
+		t.Errorf("Event.DateTimeEnd() = %v", err)
+	} else if dtEnd != wantDTEnd {
+		t.Errorf("Event.DateTimeEnd() = %v, want %v", dtEnd, wantDTEnd)
+	}
 }
