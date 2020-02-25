@@ -17,6 +17,7 @@ const (
 	Extension = "ics"
 )
 
+// Params is a set of property parameters.
 type Params map[string][]string
 
 func (params Params) Get(name string) string {
@@ -39,12 +40,14 @@ func (params Params) Del(name string) {
 	delete(params, strings.ToUpper(name))
 }
 
+// Prop is a component property.
 type Prop struct {
 	Name   string
 	Params Params
 	Value  string
 }
 
+// NewProp creates a new property with the specified name.
 func NewProp(name string) *Prop {
 	return &Prop{
 		Name:   strings.ToUpper(name),
@@ -103,6 +106,7 @@ func (prop *Prop) Bool() (bool, error) {
 	}
 }
 
+// DateTime parses the property value as a date-time or a date.
 func (prop *Prop) DateTime(loc *time.Location) (time.Time, error) {
 	if loc == nil {
 		loc = time.UTC
@@ -325,6 +329,7 @@ func (prop *Prop) SetText(text string) {
 
 // TODO: Period, RecurrenceRule, Time, URI, UTCOffset
 
+// Props is a set of component properties.
 type Props map[string][]Prop
 
 func (props Props) Get(name string) *Prop {
@@ -372,12 +377,17 @@ func (props Props) SetDateTime(name string, t time.Time) {
 	props.Set(prop)
 }
 
+// Component is an iCalendar component: collections of properties that express
+// a particular calendar semantic. A components can be an events, a to-do, a
+// journal entry, timezone information, free/busy time information, or an
+// alarm.
 type Component struct {
 	Name     string
 	Props    Props
 	Children []*Component
 }
 
+// NewComponent creates a new component with the specified name.
 func NewComponent(name string) *Component {
 	return &Component{
 		Name:  strings.ToUpper(name),
@@ -385,6 +395,7 @@ func NewComponent(name string) *Component {
 	}
 }
 
+// Components as defined in RFC 5545 section 3.6.
 const (
 	CompCalendar = "VCALENDAR"
 	CompEvent    = "VEVENT"
@@ -395,11 +406,13 @@ const (
 	CompAlarm    = "VALARM"
 )
 
+// Timezone components.
 const (
 	CompTimezoneStandard = "STANDARD"
 	CompTimezoneDaylight = "DAYLIGHT"
 )
 
+// Properties as defined in RFC 5545 section 3.7 and section 3.8.
 const (
 	// Calendar properties
 	PropCalendarScale = "CALSCALE"
@@ -466,6 +479,7 @@ const (
 	PropRequestStatus = "REQUEST-STATUS"
 )
 
+// Property parameters as defined in RFC 5545 section 3.2.
 const (
 	ParamAltRep              = "ALTREP"
 	ParamCommonName          = "CN"
@@ -489,8 +503,10 @@ const (
 	ParamValue               = "VALUE"
 )
 
+// ValueType is the type of a property.
 type ValueType string
 
+// Value types as defined in RFC 5545 section 3.3.
 const (
 	ValueDefault         ValueType = ""
 	ValueBinary          ValueType = "BINARY"
@@ -558,14 +574,17 @@ var defaultValueTypes = map[string]ValueType{
 	PropRequestStatus:      ValueText,
 }
 
+// Calendar is the top-level iCalendar object.
 type Calendar struct {
 	*Component
 }
 
+// NewCalendar creates a new calendar object.
 func NewCalendar() *Calendar {
 	return &Calendar{NewComponent(CompCalendar)}
 }
 
+// Events extracts the list of events contained in the calendar.
 func (cal *Calendar) Events() []Event {
 	l := make([]Event, 0, len(cal.Children))
 	for _, child := range cal.Children {
@@ -584,18 +603,22 @@ const (
 	EventCancelled EventStatus = "CANCELLED"
 )
 
+// Event represents a scheduled amount of time on a calendar.
 type Event struct {
 	*Component
 }
 
+// NewEvent creates a new event.
 func NewEvent() *Event {
 	return &Event{NewComponent(CompEvent)}
 }
 
+// DateTimeStart returns the inclusive start of the event.
 func (e *Event) DateTimeStart(loc *time.Location) (time.Time, error) {
 	return e.Props.DateTime(PropDateTimeStart, loc)
 }
 
+// DateTimeEnd returns the non-inclusive end of the event.
 func (e *Event) DateTimeEnd(loc *time.Location) (time.Time, error) {
 	if prop := e.Props.Get(PropDateTimeEnd); prop != nil {
 		return prop.DateTime(loc)
