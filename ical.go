@@ -90,6 +90,7 @@ func (prop *Prop) Binary() ([]byte, error) {
 
 func (prop *Prop) SetBinary(b []byte) {
 	prop.SetValueType(ValueBinary)
+	prop.Params.Set("ENCODING", "BASE64")
 	prop.Value = base64.StdEncoding.EncodeToString(b)
 }
 
