@@ -39,18 +39,6 @@ func (params Params) Del(name string) {
 	delete(params, strings.ToUpper(name))
 }
 
-func (params Params) ValueType() ValueType {
-	return ValueType(params.Get(ParamValue))
-}
-
-func (params Params) SetValueType(t ValueType) {
-	if t == ValueDefault {
-		params.Del(ParamValue)
-	} else {
-		params.Set(ParamValue, string(t))
-	}
-}
-
 type Prop struct {
 	Name   string
 	Params Params
@@ -64,10 +52,27 @@ func NewProp(name string) *Prop {
 	}
 }
 
+func (prop *Prop) ValueType() ValueType {
+	t := ValueType(prop.Params.Get(ParamValue))
+	if t == ValueDefault {
+		t = defaultValueTypes[prop.Name]
+	}
+	return t
+}
+
+func (prop *Prop) SetValueType(t ValueType) {
+	dt, ok := defaultValueTypes[prop.Name]
+	if t == ValueDefault || (ok && t == dt) {
+		prop.Params.Del(ParamValue)
+	} else {
+		prop.Params.Set(ParamValue, string(t))
+	}
+}
+
 func (prop *Prop) expectValueType(want ValueType) error {
-	t := prop.Params.ValueType()
+	t := prop.ValueType()
 	if t != ValueDefault && t != want {
-		return fmt.Errorf("ical: expected type %q, got %q", want, t)
+		return fmt.Errorf("ical: property %q: expected type %q, got %q", prop.Name, want, t)
 	}
 	return nil
 }
@@ -80,7 +85,7 @@ func (prop *Prop) Binary() ([]byte, error) {
 }
 
 func (prop *Prop) SetBinary(b []byte) {
-	prop.Params.SetValueType(ValueBinary)
+	prop.SetValueType(ValueBinary)
 	prop.Value = base64.StdEncoding.EncodeToString(b)
 }
 
@@ -102,7 +107,7 @@ func (prop *Prop) DateTime(loc *time.Location) (time.Time, error) {
 	if loc == nil {
 		loc = time.UTC
 	}
-	switch t := prop.Params.ValueType(); t {
+	switch t := prop.ValueType(); t {
 	case ValueDefault, ValueDateTime:
 		// TODO: use the TZID parameter, if any
 		if t, err := time.ParseInLocation("20060102T150405", prop.Value, loc); err == nil {
@@ -117,7 +122,7 @@ func (prop *Prop) DateTime(loc *time.Location) (time.Time, error) {
 }
 
 func (prop *Prop) SetDateTime(t time.Time) {
-	prop.Params.SetValueType(ValueDateTime)
+	prop.SetValueType(ValueDateTime)
 	prop.Value = t.Format("20060102T150405Z")
 }
 
@@ -211,7 +216,7 @@ func (prop *Prop) Duration() (time.Duration, error) {
 }
 
 func (prop *Prop) SetDuration(dur time.Duration) {
-	prop.Params.SetValueType(ValueDuration)
+	prop.SetValueType(ValueDuration)
 
 	sec := dur.Milliseconds() / 1000
 	neg := sec < 0
@@ -279,7 +284,7 @@ func (prop *Prop) TextList() ([]string, error) {
 }
 
 func (prop *Prop) SetTextList(l []string) {
-	prop.Params.SetValueType(ValueText)
+	prop.SetValueType(ValueText)
 
 	var sb strings.Builder
 	for i, text := range l {
@@ -504,6 +509,55 @@ const (
 	ValueUTCOffset       ValueType = "UTC-OFFSET"
 )
 
+var defaultValueTypes = map[string]ValueType{
+	PropCalendarScale:      ValueText,
+	PropMethod:             ValueText,
+	PropProductID:          ValueText,
+	PropVersion:            ValueText,
+	PropAttach:             ValueURI, // can be binary
+	PropCategories:         ValueText,
+	PropClass:              ValueText,
+	PropComment:            ValueText,
+	PropDescription:        ValueText,
+	PropGeo:                ValueFloat,
+	PropLocation:           ValueText,
+	PropPercentComplete:    ValueInt,
+	PropPriority:           ValueInt,
+	PropResources:          ValueText,
+	PropStatus:             ValueText,
+	PropSummary:            ValueText,
+	PropCompleted:          ValueDateTime,
+	PropDateTimeEnd:        ValueDateTime, // can be date
+	PropDue:                ValueDateTime, // can be date
+	PropDateTimeStart:      ValueDateTime, // can be date
+	PropDuration:           ValueDuration,
+	PropFreeBusy:           ValuePeriod,
+	PropTransparency:       ValueText,
+	PropTimezoneID:         ValueText,
+	PropTimezoneName:       ValueText,
+	PropTimezoneOffsetFrom: ValueUTCOffset,
+	PropTimezoneOffsetTo:   ValueUTCOffset,
+	PropTimezoneURL:        ValueURI,
+	PropAttendee:           ValueCalendarAddress,
+	PropContact:            ValueText,
+	PropOrganizer:          ValueCalendarAddress,
+	PropRecurrenceID:       ValueDateTime, // can be date
+	PropRelatedTo:          ValueText,
+	PropURL:                ValueURI,
+	PropUID:                ValueText,
+	PropExceptionDates:     ValueDateTime, // can be date
+	PropRecurrenceDates:    ValueDateTime, // can be date or period
+	PropRecurrenceRule:     ValueRecurrence,
+	PropAction:             ValueText,
+	PropRepeat:             ValueInt,
+	PropTrigger:            ValueDuration, // can be date-time
+	PropCreated:            ValueDateTime,
+	PropDateTimeStamp:      ValueDateTime,
+	PropLastModified:       ValueDateTime,
+	PropSequence:           ValueInt,
+	PropRequestStatus:      ValueText,
+}
+
 type Calendar struct {
 	*Component
 }
@@ -563,7 +617,7 @@ func (e *Event) DateTimeEnd(loc *time.Location) (time.Time, error) {
 		if err != nil {
 			return time.Time{}, err
 		}
-	} else if startProp.Params.ValueType() == ValueDate {
+	} else if startProp.ValueType() == ValueDate {
 		dur = 24 * time.Hour
 	}
 
