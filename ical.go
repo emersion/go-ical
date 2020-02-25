@@ -328,11 +328,21 @@ func (prop *Prop) SetText(text string) {
 	prop.SetTextList([]string{text})
 }
 
+// URI parses the property value as a URI or binary. If the value is binary, a
+// data URI is returned.
 func (prop *Prop) URI() (*url.URL, error) {
-	if err := prop.expectValueType(ValueURI); err != nil {
-		return nil, err
+	switch t := prop.ValueType(); t {
+	case ValueDefault, ValueURI:
+		return url.Parse(prop.Value)
+	case ValueBinary:
+		mediaType := prop.Params.Get(ParamFormatType)
+		return &url.URL{
+			Scheme: "data",
+			Opaque: mediaType + ";base64," + prop.Value,
+		}, nil
+	default:
+		return nil, fmt.Errorf("ical: expected URI or BINARY, got %q", t)
 	}
-	return url.Parse(prop.Value)
 }
 
 func (prop *Prop) SetURI(u *url.URL) {
