@@ -6,6 +6,7 @@ package ical
 import (
 	"encoding/base64"
 	"fmt"
+	"net/url"
 	"strconv"
 	"strings"
 	"time"
@@ -325,6 +326,18 @@ func (prop *Prop) Text() (string, error) {
 
 func (prop *Prop) SetText(text string) {
 	prop.SetTextList([]string{text})
+}
+
+func (prop *Prop) URI() (*url.URL, error) {
+	if err := prop.expectValueType(ValueURI); err != nil {
+		return nil, err
+	}
+	return url.Parse(prop.Value)
+}
+
+func (prop *Prop) SetURI(u *url.URL) {
+	prop.SetValueType(ValueURI)
+	prop.Value = u.String()
 }
 
 // TODO: Period, RecurrenceRule, Time, URI, UTCOffset
