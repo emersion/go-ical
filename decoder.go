@@ -196,7 +196,8 @@ func (dec *Decoder) decodeContentLine() (*Prop, error) {
 func (dec *Decoder) decodeComponentBody(name string) (*Component, error) {
 	var prop *Prop
 	props := make(Props)
-PropLoop:
+	var children []*Component
+Loop:
 	for {
 		var err error
 		prop, err = dec.decodeContentLine()
@@ -204,17 +205,6 @@ PropLoop:
 			return nil, err
 		}
 
-		switch prop.Name {
-		case "BEGIN", "END":
-			break PropLoop
-		default:
-			props[prop.Name] = append(props[prop.Name], *prop)
-		}
-	}
-
-	var children []*Component
-ChildrenLoop:
-	for {
 		switch prop.Name {
 		case "BEGIN":
 			child, err := dec.decodeComponentBody(strings.ToUpper(prop.Value))
@@ -223,15 +213,9 @@ ChildrenLoop:
 			}
 			children = append(children, child)
 		case "END":
-			break ChildrenLoop
+			break Loop
 		default:
-			return nil, fmt.Errorf("ical: malformed component: unexpected %q property in children components", prop.Name)
-		}
-
-		var err error
-		prop, err = dec.decodeContentLine()
-		if err != nil {
-			return nil, err
+			props[prop.Name] = append(props[prop.Name], *prop)
 		}
 	}
 
