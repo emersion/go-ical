@@ -141,3 +141,39 @@ func TestCalendar(t *testing.T) {
 		t.Errorf("Event.DateTimeEnd() = %v, want %v", dtEnd, wantDTEnd)
 	}
 }
+
+func TestSetDate(b *testing.T) {
+	localTimezone, err := time.LoadLocation("Europe/Paris")
+	if err != nil {
+		b.Fatal(err)
+	}
+
+	testCases := []struct {
+		Alias          string
+		Date           time.Time
+		ExpectedResult string
+	}{
+		{
+			Alias:          "UTC",
+			Date:           time.Date(2020, time.September, 20, 17, 7, 0, 0, time.UTC),
+			ExpectedResult: "20200920T170700Z",
+		},
+		{
+			Alias:          "local-tz",
+			Date:           time.Date(2020, time.September, 20, 17, 7, 0, 0, localTimezone),
+			ExpectedResult: "20200920T150700Z",
+		},
+	}
+
+	//nolint:scopelint
+	for _, tCase := range testCases {
+		testFn := func(t *testing.T) {
+			p := NewProp("FakeProp")
+			p.SetDateTime(tCase.Date)
+			if got, want := p.Value, tCase.ExpectedResult; got != want {
+				t.Errorf("bad result: %s, expected: %s", got, want)
+			}
+		}
+		b.Run(tCase.Alias, testFn)
+	}
+}
