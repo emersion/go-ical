@@ -129,7 +129,13 @@ func (prop *Prop) DateTime(loc *time.Location) (time.Time, error) {
 
 func (prop *Prop) SetDateTime(t time.Time) {
 	prop.SetValueType(ValueDateTime)
-	prop.Value = t.UTC().Format("20060102T150405Z")
+	switch t.Location() {
+	case nil, time.UTC:
+		prop.Value = t.Format("20060102T150405Z")
+	default:
+		prop.Params.Set(PropTimezoneID, t.Location().String())
+		prop.Value = t.Format("20060102T150405")
+	}
 }
 
 type durationParser struct {
