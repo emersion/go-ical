@@ -149,19 +149,22 @@ func TestSetDate(b *testing.T) {
 	}
 
 	testCases := []struct {
-		Alias          string
-		Date           time.Time
-		ExpectedResult string
+		Alias        string
+		Date         time.Time
+		ExpectedTZID string
+		ExpectedDate string
 	}{
 		{
-			Alias:          "UTC",
-			Date:           time.Date(2020, time.September, 20, 17, 7, 0, 0, time.UTC),
-			ExpectedResult: "20200920T170700Z",
+			Alias:        "UTC",
+			Date:         time.Date(2020, time.September, 20, 15, 7, 0, 0, time.UTC),
+			ExpectedTZID: "",
+			ExpectedDate: "20200920T150700Z",
 		},
 		{
-			Alias:          "local-tz",
-			Date:           time.Date(2020, time.September, 20, 17, 7, 0, 0, localTimezone),
-			ExpectedResult: "20200920T150700Z",
+			Alias:        "local-tz",
+			Date:         time.Date(2020, time.September, 20, 17, 7, 0, 0, localTimezone),
+			ExpectedTZID: "Europe/Paris",
+			ExpectedDate: "20200920T170700",
 		},
 	}
 
@@ -170,10 +173,15 @@ func TestSetDate(b *testing.T) {
 		testFn := func(t *testing.T) {
 			p := NewProp("FakeProp")
 			p.SetDateTime(tCase.Date)
-			if got, want := p.Value, tCase.ExpectedResult; got != want {
-				t.Errorf("bad result: %s, expected: %s", got, want)
+			if got, want := p.Params.Get(PropTimezoneID), tCase.ExpectedTZID; got != want {
+				t.Errorf("bad tzid: %s, expected: %s", got, want)
+			}
+			if got, want := p.Value, tCase.ExpectedDate; got != want {
+				t.Errorf("bad date: %s, expected: %s", got, want)
 			}
 		}
 		b.Run(tCase.Alias, testFn)
 	}
 }
+
+// TODO: https://www.kanzaki.com/docs/ical/dateTime.html
