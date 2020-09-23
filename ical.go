@@ -110,12 +110,21 @@ func (prop *Prop) Bool() (bool, error) {
 
 // DateTime parses the property value as a date-time or a date.
 func (prop *Prop) DateTime(loc *time.Location) (time.Time, error) {
+	// Use the TZID location, if available, otherwise the given location.
+	// Default to UTC, if there is no TZID or given location.
+	if tzid := prop.Params.Get(PropTimezoneID); tzid != "" {
+		tzLoc, err := time.LoadLocation(tzid)
+		if err != nil {
+			return time.Time{}, err
+		}
+		loc = tzLoc
+	}
 	if loc == nil {
 		loc = time.UTC
 	}
+
 	switch t := prop.ValueType(); t {
 	case ValueDefault, ValueDateTime:
-		// TODO: use the TZID parameter, if any
 		if t, err := time.ParseInLocation("20060102T150405", prop.Value, loc); err == nil {
 			return t, nil
 		}
