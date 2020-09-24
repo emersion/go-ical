@@ -123,17 +123,34 @@ func (prop *Prop) DateTime(loc *time.Location) (time.Time, error) {
 		loc = time.UTC
 	}
 
-	switch t := prop.ValueType(); t {
-	case ValueDefault, ValueDateTime:
-		if t, err := time.ParseInLocation("20060102T150405", prop.Value, loc); err == nil {
-			return t, nil
-		}
-		return time.ParseInLocation("20060102T150405Z", prop.Value, time.UTC)
+	const (
+		dateFormat        = "20060102"
+		datetimeFormat    = "20060102T150405"
+		datetimeUTCFormat = "20060102T150405Z"
+	)
+
+	valueType := prop.ValueType()
+	valueLength := len(prop.Value)
+	switch valueType {
 	case ValueDate:
-		return time.ParseInLocation("20060102", prop.Value, loc)
-	default:
-		return time.Time{}, fmt.Errorf("ical: expected DATE or DATE-TIME, got %q", t)
+		return time.ParseInLocation(dateFormat, prop.Value, loc)
+	case ValueDateTime:
+		if valueLength == len(datetimeFormat) {
+			return time.ParseInLocation(datetimeFormat, prop.Value, loc)
+		}
+		return time.ParseInLocation(datetimeUTCFormat, prop.Value, time.UTC)
+	case ValueDefault:
+		switch valueLength {
+		case len(dateFormat):
+			return time.ParseInLocation(dateFormat, prop.Value, loc)
+		case len(datetimeFormat):
+			return time.ParseInLocation(datetimeFormat, prop.Value, loc)
+		case len(datetimeUTCFormat):
+			return time.ParseInLocation(datetimeUTCFormat, prop.Value, time.UTC)
+		}
 	}
+
+	return time.Time{}, fmt.Errorf("ical: cannot process: (%q) %s", valueType, prop.Value)
 }
 
 func (prop *Prop) SetDateTime(t time.Time) {
