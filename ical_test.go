@@ -142,6 +142,107 @@ func TestCalendar(t *testing.T) {
 	}
 }
 
+func TestGetDate(b *testing.T) {
+	localTimezone, err := time.LoadLocation("Europe/Paris")
+	if err != nil {
+		b.Fatal(err)
+	}
+
+	testCases := []struct {
+		Alias        string
+		Value        string
+		ValueType    ValueType
+		TZID         string
+		Location     *time.Location
+		ExpectedDate time.Time
+	}{
+		{
+			Alias:        "datetime-local-nil",
+			Value:        "20200923T195100",
+			ValueType:    ValueDateTime,
+			TZID:         "Europe/Paris",
+			Location:     nil,
+			ExpectedDate: time.Date(2020, time.September, 23, 19, 51, 0, 0, localTimezone),
+		},
+		{
+			Alias:        "datetime-nil-local",
+			Value:        "20200923T195100",
+			ValueType:    ValueDateTime,
+			TZID:         "",
+			Location:     localTimezone,
+			ExpectedDate: time.Date(2020, time.September, 23, 19, 51, 0, 0, localTimezone),
+		},
+		{
+			Alias:        "datetime-nil-nil",
+			Value:        "20200923T195100",
+			ValueType:    ValueDateTime,
+			TZID:         "",
+			Location:     nil,
+			ExpectedDate: time.Date(2020, time.September, 23, 19, 51, 0, 0, time.UTC),
+		},
+		{
+			Alias:        "datetime-Z-no-location",
+			Value:        "20200923T195100Z",
+			ValueType:    ValueDateTime,
+			TZID:         "Europe/Paris",
+			Location:     nil,
+			ExpectedDate: time.Date(2020, time.September, 23, 19, 51, 0, 0, time.UTC),
+		},
+		{
+			Alias:        "datetime-Z-no-tzid",
+			Value:        "20200923T195100Z",
+			ValueType:    ValueDateTime,
+			TZID:         "",
+			Location:     localTimezone,
+			ExpectedDate: time.Date(2020, time.September, 23, 19, 51, 0, 0, time.UTC),
+		},
+		{
+			Alias:        "date-local-nil",
+			Value:        "20200923",
+			ValueType:    ValueDate,
+			TZID:         "Europe/Paris",
+			Location:     nil,
+			ExpectedDate: time.Date(2020, time.September, 23, 0, 0, 0, 0, localTimezone),
+		},
+		{
+			Alias:        "date-nil-local",
+			Value:        "20200923",
+			ValueType:    ValueDate,
+			TZID:         "",
+			Location:     localTimezone,
+			ExpectedDate: time.Date(2020, time.September, 23, 0, 0, 0, 0, localTimezone),
+		},
+		{
+			Alias:        "date-nil-nil",
+			Value:        "20200923",
+			ValueType:    ValueDate,
+			TZID:         "",
+			Location:     nil,
+			ExpectedDate: time.Date(2020, time.September, 23, 0, 0, 0, 0, time.UTC),
+		},
+	}
+
+	//nolint:scopelint
+	for _, tCase := range testCases {
+		testFn := func(t *testing.T) {
+			p := NewProp("FakeProp")
+			p.Value = tCase.Value
+			p.SetValueType(tCase.ValueType)
+			if tCase.TZID != "" {
+				p.Params.Set(PropTimezoneID, tCase.TZID)
+			}
+			value, err := p.DateTime(tCase.Location)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if got, want := value, tCase.ExpectedDate; value.String() != tCase.ExpectedDate.String() {
+				t.Errorf("bad date: %s, expected: %s", got, want)
+			}
+		}
+		b.Run(tCase.Alias, testFn)
+	}
+}
+
 func TestSetDate(b *testing.T) {
 	localTimezone, err := time.LoadLocation("Europe/Paris")
 	if err != nil {
@@ -149,19 +250,22 @@ func TestSetDate(b *testing.T) {
 	}
 
 	testCases := []struct {
-		Alias          string
-		Date           time.Time
-		ExpectedResult string
+		Alias        string
+		Date         time.Time
+		ExpectedTZID string
+		ExpectedDate string
 	}{
 		{
-			Alias:          "UTC",
-			Date:           time.Date(2020, time.September, 20, 17, 7, 0, 0, time.UTC),
-			ExpectedResult: "20200920T170700Z",
+			Alias:        "UTC",
+			Date:         time.Date(2020, time.September, 20, 15, 7, 0, 0, time.UTC),
+			ExpectedTZID: "",
+			ExpectedDate: "20200920T150700Z",
 		},
 		{
-			Alias:          "local-tz",
-			Date:           time.Date(2020, time.September, 20, 17, 7, 0, 0, localTimezone),
-			ExpectedResult: "20200920T150700Z",
+			Alias:        "local",
+			Date:         time.Date(2020, time.September, 20, 17, 7, 0, 0, localTimezone),
+			ExpectedTZID: "Europe/Paris",
+			ExpectedDate: "20200920T170700",
 		},
 	}
 
@@ -170,8 +274,11 @@ func TestSetDate(b *testing.T) {
 		testFn := func(t *testing.T) {
 			p := NewProp("FakeProp")
 			p.SetDateTime(tCase.Date)
-			if got, want := p.Value, tCase.ExpectedResult; got != want {
-				t.Errorf("bad result: %s, expected: %s", got, want)
+			if got, want := p.Params.Get(PropTimezoneID), tCase.ExpectedTZID; got != want {
+				t.Errorf("bad tzid: %s, expected: %s", got, want)
+			}
+			if got, want := p.Value, tCase.ExpectedDate; got != want {
+				t.Errorf("bad date: %s, expected: %s", got, want)
 			}
 		}
 		b.Run(tCase.Alias, testFn)

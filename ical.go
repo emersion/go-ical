@@ -110,26 +110,58 @@ func (prop *Prop) Bool() (bool, error) {
 
 // DateTime parses the property value as a date-time or a date.
 func (prop *Prop) DateTime(loc *time.Location) (time.Time, error) {
+	// Use the TZID location, if available, otherwise the given location.
+	// Default to UTC, if there is no TZID or given location.
+	if tzid := prop.Params.Get(PropTimezoneID); tzid != "" {
+		tzLoc, err := time.LoadLocation(tzid)
+		if err != nil {
+			return time.Time{}, err
+		}
+		loc = tzLoc
+	}
 	if loc == nil {
 		loc = time.UTC
 	}
-	switch t := prop.ValueType(); t {
-	case ValueDefault, ValueDateTime:
-		// TODO: use the TZID parameter, if any
-		if t, err := time.ParseInLocation("20060102T150405", prop.Value, loc); err == nil {
-			return t, nil
-		}
-		return time.ParseInLocation("20060102T150405Z", prop.Value, time.UTC)
+
+	const (
+		dateFormat        = "20060102"
+		datetimeFormat    = "20060102T150405"
+		datetimeUTCFormat = "20060102T150405Z"
+	)
+
+	valueType := prop.ValueType()
+	valueLength := len(prop.Value)
+	switch valueType {
 	case ValueDate:
-		return time.ParseInLocation("20060102", prop.Value, loc)
-	default:
-		return time.Time{}, fmt.Errorf("ical: expected DATE or DATE-TIME, got %q", t)
+		return time.ParseInLocation(dateFormat, prop.Value, loc)
+	case ValueDateTime:
+		if valueLength == len(datetimeFormat) {
+			return time.ParseInLocation(datetimeFormat, prop.Value, loc)
+		}
+		return time.ParseInLocation(datetimeUTCFormat, prop.Value, time.UTC)
+	case ValueDefault:
+		switch valueLength {
+		case len(dateFormat):
+			return time.ParseInLocation(dateFormat, prop.Value, loc)
+		case len(datetimeFormat):
+			return time.ParseInLocation(datetimeFormat, prop.Value, loc)
+		case len(datetimeUTCFormat):
+			return time.ParseInLocation(datetimeUTCFormat, prop.Value, time.UTC)
+		}
 	}
+
+	return time.Time{}, fmt.Errorf("ical: cannot process: (%q) %s", valueType, prop.Value)
 }
 
 func (prop *Prop) SetDateTime(t time.Time) {
 	prop.SetValueType(ValueDateTime)
-	prop.Value = t.UTC().Format("20060102T150405Z")
+	switch t.Location() {
+	case nil, time.UTC:
+		prop.Value = t.Format("20060102T150405Z")
+	default:
+		prop.Params.Set(PropTimezoneID, t.Location().String())
+		prop.Value = t.Format("20060102T150405")
+	}
 }
 
 type durationParser struct {
