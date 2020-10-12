@@ -1,0 +1,9 @@
+image: alpine/edge
+packages:
+  - go
+sources:
+  - https://github.com/emersion/go-ical
+tasks:
+  - test: |
+      cd go-ical
+      go test -v ./...
