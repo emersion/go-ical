@@ -156,11 +156,12 @@ func checkComponent(comp *Component) error {
 }
 
 type Encoder struct {
-	w io.Writer
+	w             io.Writer
+	maxLineLength int // excluding EOL characters
 }
 
 func NewEncoder(w io.Writer) *Encoder {
-	return &Encoder{w}
+	return &Encoder{w, 75}
 }
 
 func (enc *Encoder) encodeProp(prop *Prop) error {
@@ -198,10 +199,43 @@ func (enc *Encoder) encodeProp(prop *Prop) error {
 		return fmt.Errorf("ical: failed to encode property value: contains a CR or LF")
 	}
 	buf.WriteString(prop.Value)
-	buf.WriteString("\r\n")
 
-	_, err := enc.w.Write(buf.Bytes())
-	return err
+	if buf.Len() <= enc.maxLineLength {
+		buf.WriteString("\r\n")
+		_, err := enc.w.Write(buf.Bytes())
+		return err
+	}
+
+	fw := strings.Builder{}
+	reader := strings.NewReader(buf.String())
+	for {
+		r, n, err := reader.ReadRune()
+
+		if fw.Len()+n > enc.maxLineLength || err == io.EOF {
+
+			// Our next write would exceed the line-limit, so we're flushing the result now
+			fw.WriteString("\r\n")
+			if _, err := enc.w.Write([]byte(fw.String())); err != nil {
+				return err
+			}
+
+			// Clearing the writer and starting with a folding-prefix
+			fw.Reset()
+			fw.WriteString(" ")
+		}
+
+		if err != nil {
+			if err == io.EOF {
+				return nil
+			}
+			return err
+		}
+
+		_, err = fw.WriteRune(r)
+		if err != nil {
+			return err
+		}
+	}
 }
 
 func (enc *Encoder) encodeComponent(comp *Component) error {

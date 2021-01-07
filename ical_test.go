@@ -15,7 +15,8 @@ PRODID:-//xyz Corp//NONSGML PDA Calendar Version 1.0//EN
 VERSION:2.0
 BEGIN:VEVENT
 CATEGORIES:CONFERENCE
-DESCRIPTION;ALTREP="cid:part1.0001@example.org":Networld+Interop Conference and Exhibit\nAtlanta World Congress Center\n Atlanta\, Georgia
+DESCRIPTION;ALTREP="cid:part1.0001@example.org":Networld+Interop Conference
+  and Exhibit\nAtlanta World Congress Center\n Atlanta\, Georgia
 DTEND:19960920T220000Z
 DTSTAMP:19960704T120000Z
 DTSTART:19960918T143000Z
