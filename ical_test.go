@@ -1,6 +1,7 @@
 package ical
 
 import (
+	"net/url"
 	"strings"
 	"testing"
 	"time"
@@ -279,6 +280,42 @@ func TestSetDate(b *testing.T) {
 			}
 			if got, want := p.Value, tCase.ExpectedDate; got != want {
 				t.Errorf("bad date: %s, expected: %s", got, want)
+			}
+		}
+		b.Run(tCase.Alias, testFn)
+	}
+}
+
+func TestRoundtripURI(b *testing.T) {
+	testCases := []struct {
+		Alias    string
+		Expected string
+	}{
+		{
+			Alias:    "empty_url",
+			Expected: "",
+		},
+		{
+			Alias:    "scheme_and_port",
+			Expected: "https://google.com:8080",
+		},
+	}
+
+	//nolint:scopelint
+	for _, tCase := range testCases {
+		testFn := func(t *testing.T) {
+			ue, err := url.Parse(tCase.Expected)
+			if err != nil {
+				t.Fatalf("%#v", err)
+			}
+			probs := make(Props)
+			probs.SetURI("asdf", ue)
+			ug, err := probs.URI("asdf")
+			if err != nil {
+				t.Errorf("%#v", err)
+			}
+			if got, want := ug.String(), ue.String(); got != want {
+				t.Errorf("bad url: %s, expected: %s", got, want)
 			}
 		}
 		b.Run(tCase.Alias, testFn)

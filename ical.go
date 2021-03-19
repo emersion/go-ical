@@ -433,6 +433,19 @@ func (props Props) SetDateTime(name string, t time.Time) {
 	props.Set(prop)
 }
 
+func (props Props) SetURI(name string, u *url.URL) {
+	prop := NewProp(name)
+	prop.SetURI(u)
+	props.Set(prop)
+}
+
+func (props Props) URI(name string) (*url.URL, error) {
+	if prop := props.Get(name); prop != nil {
+		return prop.URI()
+	}
+	return nil, nil
+}
+
 // Component is an iCalendar component: collections of properties that express
 // a particular calendar semantic. A components can be an events, a to-do, a
 // journal entry, timezone information, free/busy time information, or an
