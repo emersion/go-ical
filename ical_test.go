@@ -143,10 +143,10 @@ func TestCalendar(t *testing.T) {
 	}
 }
 
-func TestGetDate(b *testing.T) {
+func TestGetDate(t *testing.T) {
 	localTimezone, err := time.LoadLocation("Europe/Paris")
 	if err != nil {
-		b.Fatal(err)
+		t.Fatal(err)
 	}
 
 	testCases := []struct {
@@ -223,9 +223,8 @@ func TestGetDate(b *testing.T) {
 		},
 	}
 
-	//nolint:scopelint
 	for _, tCase := range testCases {
-		testFn := func(t *testing.T) {
+		t.Run(tCase.Alias, func(t *testing.T) {
 			p := NewProp("FakeProp")
 			p.Value = tCase.Value
 			p.SetValueType(tCase.ValueType)
@@ -239,15 +238,14 @@ func TestGetDate(b *testing.T) {
 			if got, want := value, tCase.ExpectedDate; value.String() != tCase.ExpectedDate.String() {
 				t.Errorf("bad date: %s, expected: %s", got, want)
 			}
-		}
-		b.Run(tCase.Alias, testFn)
+		})
 	}
 }
 
-func TestSetDate(b *testing.T) {
+func TestSetDate(t *testing.T) {
 	localTimezone, err := time.LoadLocation("Europe/Paris")
 	if err != nil {
-		b.Fatal(err)
+		t.Fatal(err)
 	}
 
 	testCases := []struct {
@@ -270,9 +268,8 @@ func TestSetDate(b *testing.T) {
 		},
 	}
 
-	//nolint:scopelint
 	for _, tCase := range testCases {
-		testFn := func(t *testing.T) {
+		t.Run(tCase.Alias, func(t *testing.T) {
 			p := NewProp("FakeProp")
 			p.SetDateTime(tCase.Date)
 			if got, want := p.Params.Get(PropTimezoneID), tCase.ExpectedTZID; got != want {
@@ -281,12 +278,11 @@ func TestSetDate(b *testing.T) {
 			if got, want := p.Value, tCase.ExpectedDate; got != want {
 				t.Errorf("bad date: %s, expected: %s", got, want)
 			}
-		}
-		b.Run(tCase.Alias, testFn)
+		})
 	}
 }
 
-func TestRoundtripURI(b *testing.T) {
+func TestRoundtripURI(t *testing.T) {
 	testCases := []struct {
 		Alias    string
 		Expected string
@@ -301,9 +297,8 @@ func TestRoundtripURI(b *testing.T) {
 		},
 	}
 
-	//nolint:scopelint
 	for _, tCase := range testCases {
-		testFn := func(t *testing.T) {
+		t.Run(tCase.Alias, func(t *testing.T) {
 			ue, err := url.Parse(tCase.Expected)
 			if err != nil {
 				t.Fatalf("%#v", err)
@@ -317,7 +312,6 @@ func TestRoundtripURI(b *testing.T) {
 			if got, want := ug.String(), ue.String(); got != want {
 				t.Errorf("bad url: %s, expected: %s", got, want)
 			}
-		}
-		b.Run(tCase.Alias, testFn)
+		})
 	}
 }
