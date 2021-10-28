@@ -2,9 +2,12 @@ package ical
 
 import (
 	"net/url"
+	"reflect"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/teambition/rrule-go"
 )
 
 func toCRLF(s string) string {
@@ -21,6 +24,7 @@ DTEND:19960920T220000Z
 DTSTAMP:19960704T120000Z
 DTSTART:19960918T143000Z
 ORGANIZER:mailto:jsmith@example.com
+RRULE:FREQ=YEARLY;BYDAY=3SU;BYMONTH=3
 STATUS:CONFIRMED
 SUMMARY;FOO=bar,"b:az":Networld+Interop Conference
 UID:uid1@example.com
@@ -55,6 +59,11 @@ var exampleCalendar = &Calendar{&Component{
 					Name:   "UID",
 					Params: Params{},
 					Value:  "uid1@example.com",
+				}},
+				"RRULE": []Prop{{
+					Name:   "RRULE",
+					Params: Params{},
+					Value:  "FREQ=YEARLY;BYDAY=3SU;BYMONTH=3",
 				}},
 				"ORGANIZER": []Prop{{
 					Name:   "ORGANIZER",
@@ -313,5 +322,67 @@ func TestRoundtripURI(t *testing.T) {
 				t.Errorf("bad url: %s, expected: %s", got, want)
 			}
 		})
+	}
+}
+
+func TestRecurrenceRule(t *testing.T) {
+	events := exampleCalendar.Events()
+	if len(events) != 1 {
+		t.Fatalf("len(Calendar.Events()) = %v, want 1", len(events))
+	}
+	props := events[0].Props
+
+	wantRecurrenceRule := &rrule.ROption{
+		Freq:      rrule.YEARLY,
+		Bymonth:   []int{3},
+		Byweekday: []rrule.Weekday{rrule.SU.Nth(3)},
+	}
+	if roption, err := props.RecurrenceRule(); err != nil {
+		t.Errorf("Props.RecurrenceRule() = %v", err)
+	} else if !reflect.DeepEqual(roption, wantRecurrenceRule) {
+		t.Errorf("Props.RecurrenceRule() = %v, want %v", roption, wantRecurrenceRule)
+	}
+}
+
+func TestRecurrenceRuleIsAbsent(t *testing.T) {
+	props := Props{}
+
+	roption, err := props.RecurrenceRule()
+	if roption != nil || err != nil {
+		t.Errorf("Props.RecurrenceRule() = %v, %v, want nil, nil", roption, err)
+	}
+}
+
+func TestRecurrenceRuleSetToNil(t *testing.T) {
+	props := Props{
+		"RRULE": []Prop{{
+			Name:   "RRULE",
+			Params: Params{},
+			Value:  "FREQ=YEARLY;BYDAY=3SU;BYMONTH=3",
+		}},
+	}
+
+	props.SetRecurrenceRule(nil)
+
+	roption, err := props.RecurrenceRule()
+	if roption != nil || err != nil {
+		t.Errorf("Props.RecurrenceRule() = %v, %v, want nil, nil", roption, err)
+	}
+}
+
+func TestRecurrenceRuleRoundTrip(t *testing.T) {
+	recurrenceRule := &rrule.ROption{
+		Freq:      rrule.YEARLY,
+		Bymonth:   []int{3},
+		Byweekday: []rrule.Weekday{rrule.SU.Nth(3)},
+	}
+
+	props := Props{}
+	props.SetRecurrenceRule(recurrenceRule)
+
+	if roption, err := props.RecurrenceRule(); err != nil {
+		t.Errorf("Props.RecurrenceRule() = %v", err)
+	} else if !reflect.DeepEqual(roption, recurrenceRule) {
+		t.Errorf("Props.RecurrenceRule() = %v, want %v", roption, recurrenceRule)
 	}
 }

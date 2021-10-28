@@ -36,6 +36,7 @@ func checkComponent(comp *Component) error {
 			PropLocation,
 			PropOrganizer,
 			PropPriority,
+			PropRecurrenceRule,
 			PropSequence,
 			PropStatus,
 			PropSummary,

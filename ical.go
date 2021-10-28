@@ -10,6 +10,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/teambition/rrule-go"
 )
 
 // MIME type and file extension for iCal, defined in RFC 5545 section 8.1.
@@ -383,7 +385,7 @@ func (prop *Prop) SetURI(u *url.URL) {
 	prop.Value = u.String()
 }
 
-// TODO: Period, RecurrenceRule, Time, URI, UTCOffset
+// TODO: Period, Time, URI, UTCOffset
 
 // Props is a set of component properties.
 type Props map[string][]Prop
@@ -444,6 +446,56 @@ func (props Props) URI(name string) (*url.URL, error) {
 		return prop.URI()
 	}
 	return nil, nil
+}
+
+// Returns an ROption based on the events RRULE.
+//
+// This object can then be used to construct `RRule` instances for different
+// fields, for example, an rrule based on `DTSTART`:
+//
+//	roption, err := props.RecurrenceRule()
+//	if err != nil {
+//		log.Fatalf("error parsing rrule:", err)
+//	}
+//	if roption == nil {
+//		log.Fatalf("props have no RRULE")
+//	}
+//
+//	dtstart, err := props.DateTime("DTSTART", nil)
+//	if err != nil {
+//		log.Fatalf("error parsing dtstart:", err)
+//	}
+//	roption.Dtstart = dtstart
+//
+//	return rrule.NewRRule(*roption)
+//
+// This object can then be used to calculate the `DTSTART` of all recurrances.
+func (props Props) RecurrenceRule() (*rrule.ROption, error) {
+	prop := props.Get(PropRecurrenceRule)
+	if prop == nil {
+		return nil, nil
+	}
+	if err := prop.expectValueType(ValueRecurrence); err != nil {
+		return nil, err
+	}
+
+	roption, err := rrule.StrToROption(prop.Value)
+	if err != nil {
+		return nil, fmt.Errorf("ical: error parsing rrule: %v", err)
+	}
+
+	return roption, nil
+}
+
+func (props Props) SetRecurrenceRule(rule *rrule.ROption) {
+	if rule != nil {
+		prop := NewProp(PropRecurrenceRule)
+		prop.SetValueType(ValueRecurrence)
+		prop.Value = rule.RRuleString()
+		props.Set(prop)
+	} else {
+		props.Del(PropRecurrenceRule)
+	}
 }
 
 // Component is an iCalendar component: collections of properties that express
