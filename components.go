@@ -4,11 +4,54 @@ import (
 	"fmt"
 	"strings"
 	"time"
+
+	"github.com/teambition/rrule-go"
 )
 
 // Calendar is the top-level iCalendar object.
 type Calendar struct {
 	*Component
+}
+
+// RecurrenceSet returns the Recurrence Set for this component.
+func (comp *Component) RecurrenceSet(loc *time.Location) (*rrule.Set, error) {
+	roption, err := comp.Props.RecurrenceRule()
+	if err != nil {
+		return nil, fmt.Errorf("ical: error parsing recurrence: %v", err)
+	}
+	if roption == nil {
+		return nil, nil
+	}
+	dateTime, err := comp.Props.DateTime(PropDateTimeStart, loc)
+	if err != nil {
+		return nil, fmt.Errorf("ical: error parsing start time: %v", err)
+	}
+
+	rule, err := rrule.NewRRule(*roption)
+	if err != nil {
+		return nil, fmt.Errorf("ical: error buildling rrule: %v", err)
+	}
+
+	ruleSet := rrule.Set{}
+	ruleSet.RRule(rule)
+	ruleSet.DTStart(dateTime)
+
+	for _, exdateProp := range comp.Props[PropExceptionDates] {
+		exdate, err := exdateProp.DateTime(loc)
+		if err != nil {
+			return nil, fmt.Errorf("ical: error parsing exdate: %v", err)
+		}
+		ruleSet.ExDate(exdate)
+	}
+	for _, rdateProp := range comp.Props[PropExceptionDates] {
+		rdate, err := rdateProp.DateTime(loc)
+		if err != nil {
+			return nil, fmt.Errorf("ical: error parsing rdate: %v", err)
+		}
+		ruleSet.RDate(rdate)
+	}
+
+	return &ruleSet, nil
 }
 
 // NewCalendar creates a new calendar object.
