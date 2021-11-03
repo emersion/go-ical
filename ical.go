@@ -23,6 +23,10 @@ const (
 // Params is a set of property parameters.
 type Params map[string][]string
 
+func (params Params) Values(name string) []string {
+	return params[strings.ToUpper(name)]
+}
+
 func (params Params) Get(name string) string {
 	if values := params[strings.ToUpper(name)]; len(values) > 0 {
 		return values[0]
@@ -389,6 +393,10 @@ func (prop *Prop) SetURI(u *url.URL) {
 
 // Props is a set of component properties.
 type Props map[string][]Prop
+
+func (props Props) Values(name string) []Prop {
+	return props[strings.ToUpper(name)]
+}
 
 func (props Props) Get(name string) *Prop {
 	if l := props[strings.ToUpper(name)]; len(l) > 0 {
