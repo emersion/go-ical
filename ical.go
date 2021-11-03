@@ -385,7 +385,7 @@ func (prop *Prop) SetURI(u *url.URL) {
 	prop.Value = u.String()
 }
 
-// TODO: Period, Time, URI, UTCOffset
+// TODO: Period, Time, UTCOffset
 
 // Props is a set of component properties.
 type Props map[string][]Prop
