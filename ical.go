@@ -155,6 +155,11 @@ func (prop *Prop) DateTime(loc *time.Location) (time.Time, error) {
 	return time.Time{}, fmt.Errorf("ical: cannot process: (%q) %s", valueType, prop.Value)
 }
 
+func (prop *Prop) SetDate(t time.Time) {
+	prop.SetValueType(ValueDate)
+	prop.Value = t.Format("20060102")
+}
+
 func (prop *Prop) SetDateTime(t time.Time) {
 	prop.SetValueType(ValueDateTime)
 	switch t.Location() {
@@ -427,6 +432,12 @@ func (props Props) DateTime(name string, loc *time.Location) (time.Time, error) 
 		return prop.DateTime(loc)
 	}
 	return time.Time{}, nil
+}
+
+func (props Props) SetDate(name string, t time.Time) {
+	prop := NewProp(name)
+	prop.SetDate(t)
+	props.Set(prop)
 }
 
 func (props Props) SetDateTime(name string, t time.Time) {

@@ -260,6 +260,48 @@ func TestSetDate(t *testing.T) {
 	testCases := []struct {
 		Alias        string
 		Date         time.Time
+		ExpectedDate string
+	}{
+		{
+			Alias:        "UTC",
+			Date:         time.Date(2020, time.September, 20, 0, 0, 0, 0, time.UTC),
+			ExpectedDate: "20200920",
+		},
+		{
+			Alias:        "local",
+			Date:         time.Date(2020, time.September, 20, 0, 0, 0, 0, localTimezone),
+			ExpectedDate: "20200920",
+		},
+		{
+			Alias:        "non_zero_time",
+			Date:         time.Date(2020, time.September, 20, 17, 7, 0, 0, localTimezone),
+			ExpectedDate: "20200920",
+		},
+	}
+
+	for _, tCase := range testCases {
+		t.Run(tCase.Alias, func(t *testing.T) {
+			p := NewProp("FakeProp")
+			p.SetDate(tCase.Date)
+			if got, want := p.Value, tCase.ExpectedDate; got != want {
+				t.Errorf("bad date: %s, expected: %s", got, want)
+			}
+			if got, want := p.Params.Get(PropTimezoneID), ""; got != want {
+				t.Errorf("bad tzid: %s, expected: %s", got, want)
+			}
+		})
+	}
+}
+
+func TestSetDateTime(t *testing.T) {
+	localTimezone, err := time.LoadLocation("Europe/Paris")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	testCases := []struct {
+		Alias        string
+		Date         time.Time
 		ExpectedTZID string
 		ExpectedDate string
 	}{
