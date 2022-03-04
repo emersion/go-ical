@@ -212,7 +212,7 @@ func TestGetDate(t *testing.T) {
 			ValueType:    ValueDate,
 			TZID:         "Europe/Paris",
 			Location:     nil,
-			ExpectedDate: time.Date(2020, time.September, 23, 0, 0, 0, 0, localTimezone),
+			ExpectedDate: time.Date(2020, time.September, 23, 0, 0, 0, 0, time.UTC),
 		},
 		{
 			Alias:        "date-nil-local",
