@@ -20,6 +20,12 @@ const (
 	Extension = "ics"
 )
 
+const (
+	dateFormat        = "20060102"
+	datetimeFormat    = "20060102T150405"
+	datetimeUTCFormat = "20060102T150405Z"
+)
+
 // Params is a set of property parameters.
 type Params map[string][]string
 
@@ -125,12 +131,6 @@ func (prop *Prop) DateTime(loc *time.Location) (time.Time, error) {
 		loc = time.UTC
 	}
 
-	const (
-		dateFormat        = "20060102"
-		datetimeFormat    = "20060102T150405"
-		datetimeUTCFormat = "20060102T150405Z"
-	)
-
 	valueType := prop.ValueType()
 	valueLength := len(prop.Value)
 	switch valueType {
@@ -157,17 +157,17 @@ func (prop *Prop) DateTime(loc *time.Location) (time.Time, error) {
 
 func (prop *Prop) SetDate(t time.Time) {
 	prop.SetValueType(ValueDate)
-	prop.Value = t.Format("20060102")
+	prop.Value = t.Format(dateFormat)
 }
 
 func (prop *Prop) SetDateTime(t time.Time) {
 	prop.SetValueType(ValueDateTime)
 	switch t.Location() {
 	case nil, time.UTC:
-		prop.Value = t.Format("20060102T150405Z")
+		prop.Value = t.Format(datetimeUTCFormat)
 	default:
 		prop.Params.Set(PropTimezoneID, t.Location().String())
-		prop.Value = t.Format("20060102T150405")
+		prop.Value = t.Format(datetimeFormat)
 	}
 }
 
