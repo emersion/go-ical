@@ -118,38 +118,38 @@ func (prop *Prop) Bool() (bool, error) {
 
 // DateTime parses the property value as a date-time or a date.
 func (prop *Prop) DateTime(loc *time.Location) (time.Time, error) {
-	// Use the TZID location, if available, otherwise the given location.
-	// Default to UTC, if there is no TZID or given location.
-	if tzid := prop.Params.Get(PropTimezoneID); tzid != "" {
-		tzLoc, err := time.LoadLocation(tzid)
-		if err != nil {
-			return time.Time{}, err
-		}
-		loc = tzLoc
-	}
+	// Default to UTC, if there is no given location.
 	if loc == nil {
 		loc = time.UTC
 	}
 
 	valueType := prop.ValueType()
 	valueLength := len(prop.Value)
+	if valueType == ValueDefault {
+		switch valueLength {
+		case len(dateFormat):
+			valueType = ValueDate
+		case len(datetimeFormat), len(datetimeUTCFormat):
+			valueType = ValueDateTime
+		}
+	}
+
 	switch valueType {
 	case ValueDate:
 		return time.ParseInLocation(dateFormat, prop.Value, loc)
 	case ValueDateTime:
-		if valueLength == len(datetimeFormat) {
-			return time.ParseInLocation(datetimeFormat, prop.Value, loc)
-		}
-		return time.ParseInLocation(datetimeUTCFormat, prop.Value, time.UTC)
-	case ValueDefault:
-		switch valueLength {
-		case len(dateFormat):
-			return time.ParseInLocation(dateFormat, prop.Value, loc)
-		case len(datetimeFormat):
-			return time.ParseInLocation(datetimeFormat, prop.Value, loc)
-		case len(datetimeUTCFormat):
+		if valueLength == len(datetimeUTCFormat) {
 			return time.ParseInLocation(datetimeUTCFormat, prop.Value, time.UTC)
 		}
+		// Use the TZID location, if available.
+		if tzid := prop.Params.Get(PropTimezoneID); tzid != "" {
+			tzLoc, err := time.LoadLocation(tzid)
+			if err != nil {
+				return time.Time{}, err
+			}
+			loc = tzLoc
+		}
+		return time.ParseInLocation(datetimeFormat, prop.Value, loc)
 	}
 
 	return time.Time{}, fmt.Errorf("ical: cannot process: (%q) %s", valueType, prop.Value)
