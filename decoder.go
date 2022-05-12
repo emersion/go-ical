@@ -259,6 +259,8 @@ func (dec *Decoder) Decode() (*Calendar, error) {
 	comp, err := dec.decodeComponent()
 	if err != nil {
 		return nil, err
+	} else if comp.Name != CompCalendar {
+		return nil, fmt.Errorf("ical: invalid toplevel component name: expected %q, got %q", CompCalendar, comp.Name)
 	}
 
 	return &Calendar{comp}, nil
