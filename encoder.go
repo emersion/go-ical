@@ -55,6 +55,7 @@ func checkComponent(comp *Component) error {
 			PropDateTimeEnd,
 			PropDuration,
 			PropColor,
+			PropRequestStatus,
 		}
 
 		// TODO: DTSTART is required if VCALENDAR is missing the METHOD prop
