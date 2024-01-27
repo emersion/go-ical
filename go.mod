@@ -2,4 +2,4 @@ module github.com/emersion/go-ical
 
 go 1.13
 
-require github.com/teambition/rrule-go v1.7.2
+require github.com/teambition/rrule-go v1.8.2
