@@ -12,7 +12,12 @@ type lineDecoder struct {
 }
 
 func (ld *lineDecoder) decodeName() (string, error) {
-	i := strings.IndexAny(ld.s, ";:")
+	//name begin with A-Z
+	i := strings.IndexAny(ld.s, "ABCDEFGHIJKLMNOPQRSTUVWXYZ")
+	if i != 0 {
+		return "", fmt.Errorf("name not start with A-Z")
+	}
+	i = strings.IndexAny(ld.s, ";:")
 	if i < 0 {
 		return "", fmt.Errorf("ical: malformed content line: missing colon")
 	} else if i == 0 {
@@ -188,7 +193,7 @@ func (dec *Decoder) readContinuedLine() (string, error) {
 	return sb.String(), nil
 }
 
-func (dec *Decoder) decodeContentLine() (*Prop, error) {
+func (dec *Decoder) decodeContentLine(lp *Prop) (*Prop, error) {
 	for {
 		l, err := dec.readContinuedLine()
 		if err != nil {
@@ -199,7 +204,12 @@ func (dec *Decoder) decodeContentLine() (*Prop, error) {
 		}
 
 		ld := lineDecoder{l}
-		return ld.decodeContentLine()
+		p, err := ld.decodeContentLine()
+		if err != nil && lp != nil {
+			lp.Value += l
+			return nil, nil
+		}
+		return p, err
 	}
 }
 
@@ -207,14 +217,18 @@ func (dec *Decoder) decodeComponentBody(name string) (*Component, error) {
 	var prop *Prop
 	props := make(Props)
 	var children []*Component
+	var lastprop *Prop
 Loop:
 	for {
 		var err error
-		prop, err = dec.decodeContentLine()
+		//prop maybe multiline, add content to pre prop value and return nil nil
+		prop, err = dec.decodeContentLine(lastprop)
 		if err != nil {
 			return nil, err
 		}
-
+		if prop == nil {
+			continue
+		}
 		switch prop.Name {
 		case "BEGIN":
 			child, err := dec.decodeComponentBody(strings.ToUpper(prop.Value))
@@ -227,6 +241,7 @@ Loop:
 		default:
 			props[prop.Name] = append(props[prop.Name], *prop)
 		}
+		lastprop = prop
 	}
 
 	if prop.Name != "END" {
@@ -244,7 +259,7 @@ Loop:
 }
 
 func (dec *Decoder) decodeComponent() (*Component, error) {
-	prop, err := dec.decodeContentLine()
+	prop, err := dec.decodeContentLine(nil)
 	if err != nil {
 		return nil, err
 	}
