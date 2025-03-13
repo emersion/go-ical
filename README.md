@@ -1,6 +1,6 @@
 # go-ical
 
-[![GoDoc](https://godoc.org/github.com/emersion/go-ical?status.svg)](https://godoc.org/github.com/emersion/go-ical)
+[![Go Reference](https://pkg.go.dev/badge/github.com/emersion/go-ical.svg)](https://pkg.go.dev/github.com/emersion/go-ical)
 
 An [iCalendar] library for Go.
 
