@@ -42,3 +42,50 @@ func TestRecurrenceSetIsAbsent(t *testing.T) {
 		t.Errorf("Component.RecurrenceSet() = %v, %v, want nil, nil", gotRecurrenceSet, err)
 	}
 }
+
+func TestRecurrenceSetWithRDate(t *testing.T) {
+	// It creates an event with a daily recurrence rule for 2 days, but also
+	// adds a single, separate recurrence date (RDATE).
+	event := &Component{
+		Name: CompEvent,
+		Props: Props{
+			PropDateTimeStart: []Prop{{
+				Name:  PropDateTimeStart,
+				Value: "20230101T100000Z",
+			}},
+			PropRecurrenceRule: []Prop{{
+				Name:  PropRecurrenceRule,
+				Value: "FREQ=DAILY;COUNT=2",
+			}},
+			PropRecurrenceDates: []Prop{{
+				Name:  PropRecurrenceDates,
+				Value: "20230110T100000Z",
+			}},
+		},
+	}
+
+	// 1. Get the recurrence set from the component
+	gotRecurrenceSet, err := event.RecurrenceSet(time.UTC)
+	if err != nil {
+		t.Fatalf("Component.RecurrenceSet() returned an unexpected error: %v", err)
+	}
+	if gotRecurrenceSet == nil {
+		t.Fatal("Component.RecurrenceSet() returned nil, but a set was expected")
+	}
+
+	// 2. Define the expected occurrences
+	// The RRULE generates Jan 1 and Jan 2. The RDATE adds Jan 10.
+	wantOccurrences := []time.Time{
+		time.Date(2023, 1, 1, 10, 0, 0, 0, time.UTC),
+		time.Date(2023, 1, 2, 10, 0, 0, 0, time.UTC),
+		time.Date(2023, 1, 10, 10, 0, 0, 0, time.UTC),
+	}
+
+	// 3. Get the actual occurrences from the generated set
+	gotOccurrences := gotRecurrenceSet.All()
+
+	// 4. Compare the results
+	if !reflect.DeepEqual(gotOccurrences, wantOccurrences) {
+		t.Errorf("RecurrenceSet did not process RDATE correctly.\n got: %v\nwant: %v", gotOccurrences, wantOccurrences)
+	}
+}
