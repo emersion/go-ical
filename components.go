@@ -43,7 +43,7 @@ func (comp *Component) RecurrenceSet(loc *time.Location) (*rrule.Set, error) {
 		}
 		ruleSet.ExDate(exdate)
 	}
-	for _, rdateProp := range comp.Props[PropExceptionDates] {
+	for _, rdateProp := range comp.Props[PropRecurrenceDates] {
 		rdate, err := rdateProp.DateTime(loc)
 		if err != nil {
 			return nil, fmt.Errorf("ical: error parsing rdate: %v", err)
