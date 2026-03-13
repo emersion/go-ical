@@ -11,6 +11,12 @@ const (
 	CompAlarm    = "VALARM"
 )
 
+// Components as defined in RFC 7953.
+const (
+	CompVAvailability = "VAVAILABILITY"
+	CompAvailable     = "AVAILABLE"
+)
+
 // Timezone components.
 const (
 	CompTimezoneStandard = "STANDARD"
@@ -89,6 +95,9 @@ const (
 
 	// Miscellaneous component properties
 	PropRequestStatus = "REQUEST-STATUS"
+
+	// Availability properties as defined in RFC 7953.
+	PropBusyType = "BUSYTYPE"
 )
 
 // Property parameters as defined in RFC 5545 section 3.2 and RFC 7986
@@ -194,7 +203,8 @@ var defaultValueTypes = map[string]ValueType{
 	PropSource:             ValueURI,
 	PropColor:              ValueText,
 	PropImage:              ValueURI, // can be binary
-	PropConference:         ValueURI,
+	PropConference: ValueURI,
+	PropBusyType:   ValueText,
 }
 
 type EventStatus string
@@ -214,6 +224,16 @@ const (
 	ImageGraphic   ImageDisplay = "GRAPHIC"
 	ImageFullSize  ImageDisplay = "FULLSIZE"
 	ImageThumbnail ImageDisplay = "THUMBNAIL"
+)
+
+// BusyType describes the default busy time classification for a VAVAILABILITY
+// component. Defined in RFC 7953 section 3.2.
+type BusyType string
+
+const (
+	BusyTypeBusy            BusyType = "BUSY"
+	BusyTypeBusyUnavailable BusyType = "BUSY-UNAVAILABLE"
+	BusyTypeBusyTentative   BusyType = "BUSY-TENTATIVE"
 )
 
 // ConferenceFeature describes features of a conference. Defined in RFC 7986
