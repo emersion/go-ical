@@ -135,3 +135,129 @@ func (e *Event) SetStatus(status EventStatus) {
 		e.Props.SetText(PropStatus, string(status))
 	}
 }
+
+// VAvailabilities extracts the list of VAVAILABILITY components in the calendar.
+func (cal *Calendar) VAvailabilities() []VAvailability {
+	l := make([]VAvailability, 0, len(cal.Children))
+	for _, child := range cal.Children {
+		if child.Name == CompVAvailability {
+			l = append(l, VAvailability{child})
+		}
+	}
+	return l
+}
+
+// VAvailability represents a VAVAILABILITY component as defined in RFC 7953.
+// It groups availability information for a calendar user over a time range,
+// with zero or more AVAILABLE subcomponents marking specific available periods.
+type VAvailability struct {
+	*Component
+}
+
+// NewVAvailability creates a new VAVAILABILITY component.
+func NewVAvailability() *VAvailability {
+	return &VAvailability{NewComponent(CompVAvailability)}
+}
+
+// DateTimeStart returns the start of the availability period.
+func (va *VAvailability) DateTimeStart(loc *time.Location) (time.Time, error) {
+	return va.Props.DateTime(PropDateTimeStart, loc)
+}
+
+// DateTimeEnd returns the end of the availability period.
+func (va *VAvailability) DateTimeEnd(loc *time.Location) (time.Time, error) {
+	if prop := va.Props.Get(PropDateTimeEnd); prop != nil {
+		return prop.DateTime(loc)
+	}
+	startProp := va.Props.Get(PropDateTimeStart)
+	if startProp == nil {
+		return time.Time{}, nil
+	}
+	start, err := startProp.DateTime(loc)
+	if err != nil {
+		return time.Time{}, err
+	}
+	durProp := va.Props.Get(PropDuration)
+	if durProp == nil {
+		return time.Time{}, nil
+	}
+	dur, err := durProp.Duration()
+	if err != nil {
+		return time.Time{}, err
+	}
+	return start.Add(dur), nil
+}
+
+// BusyType returns the BUSYTYPE property value, defaulting to BUSY-UNAVAILABLE
+// if not set, as specified in RFC 7953.
+func (va *VAvailability) BusyType() (BusyType, error) {
+	s, err := va.Props.Text(PropBusyType)
+	if err != nil {
+		return "", err
+	}
+	if s == "" {
+		return BusyTypeBusyUnavailable, nil
+	}
+	switch bt := BusyType(strings.ToUpper(s)); bt {
+	case BusyTypeBusy, BusyTypeBusyUnavailable, BusyTypeBusyTentative:
+		return bt, nil
+	default:
+		return "", fmt.Errorf("ical: invalid BUSYTYPE: %q", s)
+	}
+}
+
+// SetBusyType sets the BUSYTYPE property.
+func (va *VAvailability) SetBusyType(bt BusyType) {
+	va.Props.SetText(PropBusyType, string(bt))
+}
+
+// Available returns the AVAILABLE subcomponents of this VAVAILABILITY.
+func (va *VAvailability) Available() []Available {
+	l := make([]Available, 0, len(va.Children))
+	for _, child := range va.Children {
+		if child.Name == CompAvailable {
+			l = append(l, Available{child})
+		}
+	}
+	return l
+}
+
+// Available represents an AVAILABLE subcomponent within a VAVAILABILITY
+// component as defined in RFC 7953. It marks a specific time range as available.
+type Available struct {
+	*Component
+}
+
+// NewAvailable creates a new AVAILABLE component.
+func NewAvailable() *Available {
+	return &Available{NewComponent(CompAvailable)}
+}
+
+// DateTimeStart returns the start of this available period.
+func (a *Available) DateTimeStart(loc *time.Location) (time.Time, error) {
+	return a.Props.DateTime(PropDateTimeStart, loc)
+}
+
+// DateTimeEnd returns the end of this available period.
+func (a *Available) DateTimeEnd(loc *time.Location) (time.Time, error) {
+	if prop := a.Props.Get(PropDateTimeEnd); prop != nil {
+		return prop.DateTime(loc)
+	}
+	startProp := a.Props.Get(PropDateTimeStart)
+	if startProp == nil {
+		return time.Time{}, nil
+	}
+	start, err := startProp.DateTime(loc)
+	if err != nil {
+		return time.Time{}, err
+	}
+	durProp := a.Props.Get(PropDuration)
+	if durProp == nil {
+		return time.Time{}, nil
+	}
+	dur, err := durProp.Duration()
+	if err != nil {
+		return time.Time{}, err
+	}
+	return start.Add(dur), nil
+}
