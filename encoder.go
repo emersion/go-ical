@@ -196,7 +196,7 @@ func (enc *Encoder) encodeProp(prop *Prop) error {
 				buf.WriteString(",")
 			}
 			if strings.ContainsRune(v, '"') {
-				return fmt.Errorf("ical: failed to encode param value: contains a double-quote")
+				return fmt.Errorf("ical: failed to encode property %q: param %q value contains a double-quote", prop.Name, name)
 			}
 			if strings.ContainsAny(v, ";:,") {
 				buf.WriteString(`"` + v + `"`)
@@ -208,7 +208,7 @@ func (enc *Encoder) encodeProp(prop *Prop) error {
 
 	buf.WriteString(":")
 	if strings.ContainsAny(prop.Value, "\r\n") {
-		return fmt.Errorf("ical: failed to encode property value: contains a CR or LF")
+		return fmt.Errorf("ical: failed to encode property %q: value contains a CR or LF", prop.Name)
 	}
 	buf.WriteString(prop.Value)
 	buf.WriteString("\r\n")
