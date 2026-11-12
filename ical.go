@@ -299,6 +299,10 @@ func (prop *Prop) Int() (int, error) {
 }
 
 func (prop *Prop) TextList() ([]string, error) {
+	return prop.textList(true)
+}
+
+func (prop *Prop) textList(split bool) ([]string, error) {
 	if err := prop.expectValueType(ValueText); err != nil {
 		return nil, err
 	}
@@ -321,6 +325,10 @@ func (prop *Prop) TextList() ([]string, error) {
 				return nil, fmt.Errorf("ical: malformed text: invalid escape sequence '\\%v'", c)
 			}
 		case ',':
+			if !split {
+				sb.WriteByte(c)
+				break
+			}
 			l = append(l, sb.String())
 			sb.Reset()
 		default:
@@ -361,8 +369,10 @@ func (prop *Prop) SetTextList(l []string) {
 	prop.Value = sb.String()
 }
 
+// Text parses the property value as a single unescaped text. Unlike TextList,
+// it doesn't split the value on unescaped commas.
 func (prop *Prop) Text() (string, error) {
-	l, err := prop.TextList()
+	l, err := prop.textList(false)
 	if err != nil {
 		return "", err
 	}
