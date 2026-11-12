@@ -341,13 +341,14 @@ func (prop *Prop) SetTextList(l []string) {
 			sb.WriteByte(',')
 		}
 
+		text = strings.ReplaceAll(text, "\r\n", "\n")
 		sb.Grow(len(text))
 		for _, r := range text {
 			switch r {
 			case '\\', ';', ',':
 				sb.WriteByte('\\')
 				sb.WriteRune(r)
-			case '\n':
+			case '\n', '\r':
 				sb.WriteString("\\n")
 			default:
 				sb.WriteRune(r)

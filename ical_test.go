@@ -428,3 +428,13 @@ func TestRecurrenceRuleRoundTrip(t *testing.T) {
 		t.Errorf("Props.RecurrenceRule() = %v, want %v", roption, recurrenceRule)
 	}
 }
+
+func TestSetTextLineBreaks(t *testing.T) {
+	for _, s := range []string{"a\nb", "a\r\nb", "a\rb"} {
+		prop := NewProp(PropDescription)
+		prop.SetText(s)
+		if want := `a\nb`; prop.Value != want {
+			t.Errorf("SetText(%q): got value %q, want %q", s, prop.Value, want)
+		}
+	}
+}
