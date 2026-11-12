@@ -335,7 +335,7 @@ func (prop *Prop) TextList() ([]string, error) {
 // SetTextList sets the property value to a list of escaped texts.
 //
 // A line feed is escaped as "\n". TEXT has no escape for a carriage return, so
-// a text containing one is stored as is, and encoding it fails.
+// encoding a text containing one returns an error.
 func (prop *Prop) SetTextList(l []string) {
 	prop.SetValueType(ValueText)
 
