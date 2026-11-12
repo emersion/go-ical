@@ -333,6 +333,28 @@ func TestSetDateTime(t *testing.T) {
 	}
 }
 
+func TestText(t *testing.T) {
+	testCases := []struct {
+		value string
+		want  string
+	}{
+		{`Lunch`, "Lunch"},
+		{`Lunch\, then walk`, "Lunch, then walk"},
+		{`Lunch, then walk`, "Lunch, then walk"},
+		{`a\\b\;c\nd\Ne`, "a\\b;c\nd\ne"},
+	}
+
+	for _, tc := range testCases {
+		prop := NewProp(PropSummary)
+		prop.Value = tc.value
+		if got, err := prop.Text(); err != nil {
+			t.Errorf("Prop.Text() for %q = %v", tc.value, err)
+		} else if got != tc.want {
+			t.Errorf("Prop.Text() for %q = %q, want %q", tc.value, got, tc.want)
+		}
+	}
+}
+
 func TestRoundtripURI(t *testing.T) {
 	testCases := []struct {
 		Alias    string
