@@ -16,3 +16,12 @@ func TestEncoder(t *testing.T) {
 		t.Errorf("Encode() = \n%v\nbut want:\n%v", s, exampleCalendarStr)
 	}
 }
+
+func TestEncoderParamLineBreak(t *testing.T) {
+	for _, v := range []string{"a\r\nATTACH:b", "a\rb", "a\nb"} {
+		prop := Prop{Name: PropAttendee, Params: Params{ParamCommonName: {v}}, Value: "mailto:a@example.org"}
+		if err := NewEncoder(&bytes.Buffer{}).encodeProp(&prop); err == nil {
+			t.Errorf("encodeProp() with param value %q = nil, want an error", v)
+		}
+	}
+}
