@@ -152,6 +152,55 @@ func checkComponent(comp *Component) error {
 		}
 	case CompAlarm:
 		// TODO
+	case CompVAvailability:
+		for _, child := range comp.Children {
+			if child.Name != CompAvailable {
+				return fmt.Errorf("ical: failed to encode VAVAILABILITY: nested %q components are forbidden, only AVAILABLE is allowed", child.Name)
+			}
+		}
+
+		exactlyOneProps = []string{PropDateTimeStamp, PropUID}
+		atMostOneProps = []string{
+			PropBusyType,
+			PropClass,
+			PropCreated,
+			PropDescription,
+			PropDateTimeStart,
+			PropLastModified,
+			PropLocation,
+			PropOrganizer,
+			PropPriority,
+			PropSequence,
+			PropSummary,
+			PropURL,
+			PropDateTimeEnd,
+			PropDuration,
+		}
+
+		if len(comp.Props[PropDateTimeEnd]) > 0 && len(comp.Props[PropDuration]) > 0 {
+			return fmt.Errorf("ical: failed to encode VAVAILABILITY: only one of DTEND and DURATION can be specified")
+		}
+	case CompAvailable:
+		if len(comp.Children) > 0 {
+			return fmt.Errorf("ical: failed to encode AVAILABLE: nested components are forbidden")
+		}
+
+		exactlyOneProps = []string{PropDateTimeStamp, PropDateTimeStart, PropUID}
+		atMostOneProps = []string{
+			PropCreated,
+			PropDescription,
+			PropLastModified,
+			PropLocation,
+			PropRecurrenceID,
+			PropRecurrenceRule,
+			PropSummary,
+			PropDateTimeEnd,
+			PropDuration,
+		}
+
+		if len(comp.Props[PropDateTimeEnd]) > 0 && len(comp.Props[PropDuration]) > 0 {
+			return fmt.Errorf("ical: failed to encode AVAILABLE: only one of DTEND and DURATION can be specified")
+		}
 	}
 
 	for _, name := range exactlyOneProps {
