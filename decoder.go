@@ -89,13 +89,16 @@ Loop:
 		}
 		values = append(values, value)
 
+		if ld.empty() {
+			return "", nil, fmt.Errorf("ical: malformed param: expected colon")
+		}
 		switch c := ld.peek(); c {
 		case ',':
 			ld.s = ld.s[1:]
 		case ';', ':':
 			break Loop
 		default:
-			panic(fmt.Errorf("ical: unexpected character %q after decoding param value", c))
+			return "", nil, fmt.Errorf("ical: malformed param value: unexpected character %q", c)
 		}
 	}
 

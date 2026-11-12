@@ -91,3 +91,17 @@ END:VCALENDAR
 		t.Errorf("DecodeCalendar() = \n%#v\nbut want:\n%#v", cal, calendar)
 	}
 }
+
+func TestDecoderMalformedParam(t *testing.T) {
+	for _, s := range []string{
+		"BEGIN;X=",
+		"BEGIN;X=a",
+		"BEGIN;X=\"a\"b:VCALENDAR",
+		"BEGIN:VCALENDAR\r\nSUMMARY;X=\r\nEND:VCALENDAR\r\n",
+	} {
+		_, err := NewDecoder(strings.NewReader(s)).Decode()
+		if err == nil {
+			t.Errorf("Decode(%q) = nil, want an error", s)
+		}
+	}
+}
