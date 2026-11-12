@@ -51,6 +51,9 @@ func (ld *lineDecoder) decodeParamValue() (string, error) {
 		if !ld.consume('"') {
 			return "", fmt.Errorf("ical: malformed param value: unterminated quoted string")
 		}
+		if !ld.empty() && !strings.ContainsRune(";,:", rune(ld.peek())) {
+			return "", fmt.Errorf("ical: malformed param value: unexpected character %q after quoted string", ld.peek())
+		}
 	} else {
 	Loop:
 		for !ld.empty() {
@@ -89,6 +92,9 @@ Loop:
 		}
 		values = append(values, value)
 
+		if ld.empty() {
+			return "", nil, fmt.Errorf("ical: malformed param: expected colon")
+		}
 		switch c := ld.peek(); c {
 		case ',':
 			ld.s = ld.s[1:]
